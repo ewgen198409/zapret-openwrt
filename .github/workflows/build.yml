@@ -117,7 +117,7 @@ jobs:
           SHA: ${{ needs.check.outputs.sha }}
           ARCH: ${{ matrix.arch }}
           BRANCH: ${{ matrix.branch }}
-          # SIGN_KEY: ${{ needs }}
+          SIGN_KEY: ${{ secrets.SIGN_PRIVATE_KEY }}
           CCACHE_DIR: ${{ matrix.branch == 'openwrt-19.07' && '/home/build/openwrt/.ccache' || '/builder/.ccache' }}
         shell: bash
         run: |
