@@ -183,7 +183,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        branch: [ 'SNAPSHOT', '23.05' ]
+        branch: [ '23.05' ]
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
