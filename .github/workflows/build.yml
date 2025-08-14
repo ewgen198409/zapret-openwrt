@@ -36,13 +36,13 @@ env:
   FAKE_BUILD: ${{ github.event.inputs.fake_build == 'true' }}
   MAX_SPEED: ${{ github.event.inputs.max_speed != 'false' }}
   TAG_SUFFIX: ${{ github.event.inputs.fake_build == 'true' && '-fake' || github.event.inputs.test_build == 'true' && '-test' || '' }}
-  REPO_URL: https://github.com/kozhini/zapret-openwrt
-  REPO_LNK: kozhini/zapret-openwrt
+  REPO_URL: https://github.com/ewgen198409/zapret-openwrt
+  REPO_LNK: ewgen198409/zapret-openwrt
   REPO_BRANCH: master
   BUILD_ROOT: ${{ github.workspace }}/builder
   BUILD_DATE: unknown
   REPO_DATE: unknown
-  LUCI_ARCH: aarch64_cortex-a53
+  LUCI_ARCH: mipsel_24kc
 
 jobs:
   check:
@@ -110,9 +110,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ openwrt-24.10 ]
+        branch: [ openwrt-23.05 ]
         arch:
-          - aarch64_cortex-a53
+          - mipsel_24kc
         isTestOrFake:
           - ${{ needs.check.outputs.test_build == 'true' || needs.check.outputs.fake_build == 'true' }}
         exclude:
@@ -318,7 +318,7 @@ jobs:
           body: |
             zapret v${{ needs.build.outputs.pkgver }} for OpenWrt
             
-            Individual IPK package files for aarch64_cortex-a53 architecture:
-            - All files with `aarch64_cortex-a53_` prefix are for aarch64_cortex-a53 architecture
-            - All files are `.ipk` packages for OpenWrt 24.10
+            Individual IPK package files for mipsel_24kc architecture:
+            - All files with `mipsel_24kc_` prefix are for mipsel_24kc architecture
+            - All files are `.ipk` packages for OpenWrt 23.05
           files: ./release_files/*
