@@ -65,18 +65,18 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ openwrt-23.05, SNAPSHOT ]
+        branch: [ openwrt-23.05 ]
         arch:
           - mipsel_24kc
-        include:
-          - branch: SNAPSHOT
-            arch: aarch64_cortex-a76
-            #arch: riscv64_riscv64
-        exclude:
-          - branch: SNAPSHOT
-            arch: arm_mpcore
-          - branch: SNAPSHOT
-            arch: arm_cortex-a9_vfpv3-d16
+        # include:
+        #   - branch: SNAPSHOT
+        #     arch: aarch64_cortex-a76
+        #     #arch: riscv64_riscv64
+        # exclude:
+        #   - branch: SNAPSHOT
+        #     arch: arm_mpcore
+        #   - branch: SNAPSHOT
+        #     arch: arm_cortex-a9_vfpv3-d16
     container:
       image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.branch }}
       options: --user root
@@ -88,7 +88,7 @@ jobs:
           path: zapret-openwrt
 
       - name: Setup OpenWrt SDK
-        if: ${{ matrix.branch == 'openwrt-23.05' || matrix.branch == 'SNAPSHOT' }}
+        if: ${{ matrix.branch == 'openwrt-23.05'  }}
         working-directory: /builder
         shell: bash
         run: |
