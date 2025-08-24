@@ -68,10 +68,10 @@ jobs:
         branch: [ openwrt-23.05, openwrt-24.10 ]
         arch:
           - mipsel_24kc
-        include:
-          - branch: SNAPSHOT
-            arch: aarch64_cortex-a76
-            #arch: riscv64_riscv64
+        # include:
+        #   # - branch: SNAPSHOT
+        #   #   arch: aarch64_cortex-a76
+        #     #arch: riscv64_riscv64
         exclude:
           - branch: SNAPSHOT
             arch: arm_mpcore
