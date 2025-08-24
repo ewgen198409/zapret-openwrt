@@ -21,7 +21,7 @@ jobs:
         id: gh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          REPO: 'remittor/zapret-openwrt'
+          REPO: 'ewgen198409/zapret-openwrt'
         run: |
           echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
           echo "Tag name from github.ref_name: ${{ github.ref_name }}"
@@ -65,7 +65,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ openwrt-23.05, SNAPSHOT ]
+        branch: [ openwrt-23.05, openwrt-24.10 ]
         arch:
           - mipsel_24kc
         include:
@@ -84,11 +84,11 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          repository: 'remittor/zapret-openwrt'
+          repository: 'ewgen198409/zapret-openwrt'
           path: zapret-openwrt
 
       - name: Setup OpenWrt SDK
-        if: ${{ matrix.branch == 'openwrt-23.05' || matrix.branch == 'SNAPSHOT' }}
+        if: ${{ matrix.branch == 'openwrt-23.05' || matrix.branch == 'openwrt-24.10' }}
         working-directory: /builder
         shell: bash
         run: |
@@ -183,7 +183,7 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        branch: [ 'SNAPSHOT', '23.05' ]
+        branch: [ '24.10', '23.05' ]
     steps:
       - name: Download artifacts
         uses: actions/download-artifact@v4
