@@ -358,7 +358,15 @@ return view.extend({
             o.inputtitle = _('Edit');
             o.inputstyle = 'edit btn';
             o.description = fn;
-            let desc = (num == tools.discord_num) ? _('Example') + ': <a href=%s>%s</a>'.format(tools.discord_url) : '';
+            
+            // Handle both Discord and WhatsApp examples
+            let desc = '';
+            if (num == tools.discord_num) {
+                desc = _('Example') + ': <a href=%s>%s</a>'.format(tools.discord_url);
+            } else if (num == tools.whatsapp_num) {
+                desc = _('Example') + ': <a href=%s>%s</a>'.format(tools.whatsapp_url);
+            }
+            
             o.onclick = () => new tools.fileEditDialog(fn, name, desc, '', 15).show();
         }
 

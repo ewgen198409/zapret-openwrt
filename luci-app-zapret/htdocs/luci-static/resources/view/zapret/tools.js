@@ -51,8 +51,10 @@ return baseclass.extend({
     custFileTemplate  : '/opt/zapret/ipset/cust%s.txt',
     customdPrefixList : [ 10, 20, 50, 60, 90 ] ,
     customdFileFormat : '/opt/zapret/init.d/openwrt/custom.d/%s-script.sh',
-    discord_num       : 50,
-    discord_url       : 'https://github.com/bol-van/zapret/blob/4e8e3a9ed9dbeb1156db68dfaa7b353051c13797/init.d/custom.d.examples.linux/50-discord',
+    whatsapp_num      : 10,
+    whatsapp_url      : 'https://github.com/bol-van/zapret/blob/master/init.d/custom.d.examples.linux/50-stun4all',
+    discord_num       : 20,
+    discord_url       : 'https://github.com/bol-van/zapret/blob/master/init.d/custom.d.examples.linux/50-discord-media',
     nfqws_opt_url     : 'https://github.com/remittor/zapret-openwrt/discussions/168',
 
     autoHostListFN    : '/opt/zapret/ipset/zapret-hosts-auto.txt',
