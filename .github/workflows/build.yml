@@ -306,5 +306,7 @@ jobs:
           tag_name: v${{ needs.build.outputs.pkgver }}${{ env.TAG_SUFFIX }}
           name: zapret v${{ needs.build.outputs.pkgver }}
           body: |
-            zapret v${{ needs.build.outputs.pkgver }} for OpenWrt
+            ### zapret v${{ needs.build.outputs.pkgver }} for OpenWrt
+            ### Supported architectures:
+                - mipsel_24kc
           files: ./public/*.zip
