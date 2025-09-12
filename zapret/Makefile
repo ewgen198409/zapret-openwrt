@@ -5,17 +5,20 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zapret
+PKG_VERSION:=71.20250822
 
 PKG_MAINTAINER:=bol-van
 PKG_LICENSE:=MIT
 PKG_LICENSE_FILES:=docs/LICENSE.txt
 
-PKG_VERSION:=1.0.20250907   # Будет перезаписано workflow
 PKG_SOURCE_URL:=https://github.com/bol-van/zapret.git
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=HEAD       # Будет перезаписано workflow последним коммитом
-PKG_SOURCE_DATE:=20250907      # Будет перезаписано workflow текущей датой
-PKG_HASH:=skip                 # SHA пересчитывается workflow
+PKG_SOURCE_VERSION:=7364bab8a78426c84b995e36cd08d542ef6f73a8
+PKG_SOURCE_DATE:=2025-08-22
+
+#PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
+#PKG_SOURCE_URL:=https://github.com/bol-van/zapret/archive/refs/tags/v$(PKG_VERSION).tar.gz?
+#PKG_HASH:=skip
 
 include $(INCLUDE_DIR)/package.mk
 

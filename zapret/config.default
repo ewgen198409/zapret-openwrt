@@ -96,13 +96,13 @@ NFQWS_PORTS_UDP_KEEPALIVE=""
 # use <HOSTLIST> and <HOSTLIST_NOAUTO> placeholders to engage standard hostlists and autohostlist in ipset dir
 # hostlist markers are replaced to empty string if MODE_FILTER does not satisfy
 # <HOSTLIST_NOAUTO> appends ipset/zapret-hosts-auto.txt as normal list
-NFQWS_OPT="--filter-tcp=80 --dpi-desync=fake,multisplit --dpi-desync-ttl=0 --dpi-desync-fooling=md5sig,badsum --dpi-desync-fake-http=/opt/zapret/files/fake/dht_get_peers.bin <HOSTLIST> --new --filter-tcp=443 --dpi-desync=fake,multidisorder --dpi-desync-split-pos=method+2,midsld,5 --dpi-desync-ttl=0 --dpi-desync-fooling=md5sig,badsum,badseq --dpi-desync-repeats=15 --dpi-desync-any-protocol --dpi-desync-cutoff=d4 --dpi-desync-fake-tls=/opt/zapret/files/fake/dht_get_peers.bin <HOSTLIST> --new --filter-udp=443 --dpi-desync=fake --dpi-desync-repeats=15 --dpi-desync-ttl=0 --dpi-desync-any-protocol --dpi-desync-cutoff=d4 --dpi-desync-fooling=md5sig,badsum --dpi-desync-fake-quic=/opt/zapret/files/fake/dht_get_peers.bin <HOSTLIST> --new --filter-udp=50000-50099 --filter-l7=discord,stun --dpi-desync=fake <HOSTLIST>"
+NFQWS_OPT="--filter-tcp=80 <HOSTLIST> --dpi-desync=fake,fakedsplit --dpi-desync-autottl=2 --dpi-desync-fooling=badsum --new --filter-tcp=443 --hostlist=/opt/zapret/ipset/zapret-hosts-google.txt --dpi-desync=fake,multidisorder --dpi-desync-split-pos=1,midsld --dpi-desync-repeats=11 --dpi-desync-fooling=badsum --dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com --new --filter-udp=443 --hostlist=/opt/zapret/ipset/zapret-hosts-google.txt --dpi-desync=fake --dpi-desync-repeats=11 --dpi-desync-fake-quic=/opt/zapret/files/fake/quic_initial_www_google_com.bin --new --filter-udp=443 <HOSTLIST_NOAUTO> --dpi-desync=fake --dpi-desync-repeats=11 --new --filter-tcp=443 <HOSTLIST> --dpi-desync=multidisorder --dpi-desync-split-pos=1,sniext+1,host+1,midsld-2,midsld,midsld+2,endhost-1"
 
 
 DISABLE_CUSTOM=0
 
 # FlowOffload mode : donttouch,none,software,hardware
-FLOWOFFLOAD=hardware
+FLOWOFFLOAD=none
 
 # openwrt: specify networks to be treated as LAN. default is "lan"
 #OPENWRT_LAN="lan lan2 lan3"
@@ -135,11 +135,6 @@ DISABLE_IPV4=0
 
 # do not work with ipv6
 DISABLE_IPV6=1
-
-# drop icmp time exceeded messages for nfqws tampered connections
-# in POSTNAT mode this can interfere with default mtr/traceroute in tcp or udp mode. use source port not redirected to nfqws
-# set to 0 if you are not expecting connection breakage due to icmp in response to TCP SYN or UDP
-FILTER_TTL_EXPIRED_ICMP=1
 
 # drop icmp time exceeded messages for nfqws tampered connections
 # in POSTNAT mode this can interfere with default mtr/traceroute in tcp or udp mode. use source port not redirected to nfqws
