@@ -80,6 +80,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DATA) ./config.default $(1)/opt/zapret/config.default
 	$(INSTALL_DATA) ./ipset/zapret-hosts-google.txt       $(1)/opt/zapret/ipset/zapret-hosts-google.txt
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user-exclude.txt $(1)/opt/zapret/ipset/zapret-hosts-user-exclude.txt
+#	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset/zapret-hosts-user.txt
 	$(INSTALL_DATA) ./ipset/zapret-ip-exclude.txt         $(1)/opt/zapret/ipset/zapret-ip-exclude.txt
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
 	$(INSTALL_BIN) ./uci-def-cfg.sh     $(1)/etc/uci-defaults/zapret-uci-def-cfg.sh
