@@ -30,13 +30,6 @@ on:
   push:
     tags:
       - v[0-9]+*
-    branches:
-      - '24.10'
-      - 'master'
-  pull_request:
-    branches:
-      - '24.10'
-      - 'master'
 
 env:
   TEST_BUILD: ${{ github.event.inputs.test_build == 'true' }}
@@ -45,10 +38,11 @@ env:
   TAG_SUFFIX: ${{ github.event.inputs.fake_build == 'true' && '-fake' || github.event.inputs.test_build == 'true' && '-test' || '' }}
   REPO_URL: https://github.com/ewgen198409/zapret-openwrt
   REPO_LNK: ewgen198409/zapret-openwrt
-  REPO_BRANCH: ${{ github.ref_name }}  # Используем текущую ветку
+  REPO_BRANCH: master
   BUILD_ROOT: ${{ github.workspace }}/builder
   BUILD_DATE: unknown
   REPO_DATE: unknown
+  LUCI_ARCH: mipsel_24kc
 
 jobs:
   check:
@@ -64,29 +58,15 @@ jobs:
       is_active: ${{ steps.activity.outputs.is_active }}
       test_build: ${{ env.TEST_BUILD }}
       fake_build: ${{ env.FAKE_BUILD }}
-      branch: ${{ steps.branch.outputs.current_branch }}
     steps:
-      - name: Determine branch
-        id: branch
-        run: |
-          if [ "${{ github.event_name }}" = "push" ] && [ "${{ startsWith(github.ref, 'refs/tags/') }}" = "true" ]; then
-            CURRENT_BRANCH="24.10"  # Для тегов используем основную ветку
-          elif [ "${{ github.event_name }}" = "pull_request" ]; then
-            CURRENT_BRANCH="${{ github.base_ref }}"
-          else
-            CURRENT_BRANCH="${{ github.ref_name }}"
-          fi
-          echo "current_branch=$CURRENT_BRANCH" >> $GITHUB_OUTPUT
-          echo "Using branch: $CURRENT_BRANCH"
-
       - name: Get repo data via GH API
         id: gh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          BRANCH: ${{ steps.branch.outputs.current_branch }}
         run: |
           echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
           echo "Tag name from github.ref_name: ${{ github.ref_name }}"
+          BRANCH=$(gh api repos/$REPO_LNK --jq '.default_branch')
           REPO_DATE=$(gh api repos/$REPO_LNK/commits/$BRANCH --jq '.commit.committer.date')
           BUILD_DATE=$( date --utc +'%Y%m%d' )
           FW_DATE=$( date --utc +'%Y-%m-%d' )
@@ -125,7 +105,7 @@ jobs:
 
   build:
     needs: check
-    if: needs.check.outputs.is_active == 'true'
+    #if: needs.check.outputs.is_active == 'true'
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -133,6 +113,8 @@ jobs:
         branch: [ openwrt-24.10 ]
         arch:
           - mipsel_24kc
+        isTestOrFake:
+          - ${{ needs.check.outputs.test_build == 'true' || needs.check.outputs.fake_build == 'true' }}
     container:
       image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.branch }}
       options: --user root
@@ -143,20 +125,7 @@ jobs:
         uses: actions/checkout@v4
         with:
           repository: ${{ env.REPO_LNK }}
-          ref: ${{ needs.check.outputs.branch }}
           path: zapret-openwrt
-
-      - name: Verify package structure
-        working-directory: ${{ github.workspace }}/zapret-openwrt
-        run: |
-          echo "Checking package structure..."
-          for pkg in zapret zapret-tpws zapret-mdig zapret-ip2net luci-app-zapret; do
-            if [ ! -f "$pkg/Makefile" ]; then
-              echo "ERROR: Missing Makefile in $pkg"
-              exit 1
-            fi
-            echo "✓ Found $pkg/Makefile"
-          done
 
       - name: Setup OpenWrt SDK
         working-directory: /builder
@@ -164,15 +133,14 @@ jobs:
           BRANCH: ${{ matrix.branch }}
         shell: bash
         run: |
-          # Import GPG key
+          # gpg --verbose --recv-keys 0x1D53D1877742E911
           gpg --verbose --import <(wget -qO- 'https://git.openwrt.org/?p=keyring.git;a=blob_plain;f=gpg/0x1D53D1877742E911.asc')
-          # Disable signature verification for speed
+          # disable check signatures
           sed -i 's/gpg --/#gpg --/g' setup.sh
+          # disable cleanup keys
           sed -r -i 's/^rm.+//' setup.sh
           ./setup.sh
           ls -lh
-          
-          # Set package type based on OpenWrt version
           if [ "$BRANCH" = "openwrt-24.10" ]; then
               echo "PKGTYPE=ipk" >> $GITHUB_ENV
           else
@@ -195,6 +163,7 @@ jobs:
           BUILD_DATE: ${{ needs.check.outputs.build_date }}
           ARCH: ${{ matrix.arch }}
           BRANCH: ${{ matrix.branch }}
+          SIGN_KEY: ${{ secrets.SIGN_PRIVATE_KEY }}
           CCACHE_DIR: '/builder/.ccache'
         shell: bash
         run: |
@@ -202,11 +171,8 @@ jobs:
           MKFN=$PKGDIR/luci-app-zapret/Makefile
           PKGVER=$( grep -s '^PKG_VERSION:=.*' $MKFN | cut -d'=' -f2 )
           echo "PKG_VERSION = $PKGVER"
-          
-          # Copy packages
           cp -vr $PKGDIR ./package/zapret-openwrt/
           
-          # Setup feeds
           mv feeds.conf.default feeds.conf
           sed -i -e 's|base.*\.git|base https://github.com/openwrt/openwrt.git|' feeds.conf
           sed -i -e 's|packages.*\.git|packages https://github.com/openwrt/packages.git|' feeds.conf
@@ -214,14 +180,9 @@ jobs:
           mkdir -p ./logs
           
           if [ "$FAKE_BUILD" = "false" ]; then
-              echo "Updating feeds..."
               ./scripts/feeds update base packages luci
-              echo "Installing feeds..."
               ./scripts/feeds install -a
-          else
-              echo "Skipping feeds update (fake build)"
           fi
-          
           echo "FAKE_BUILD=$FAKE_BUILD" >> $GITHUB_ENV
           echo "PKGVER=$PKGVER" >> $GITHUB_ENV
           echo "pkgver=$PKGVER" >> $GITHUB_OUTPUT
@@ -240,50 +201,37 @@ jobs:
         shell: bash
         run: |
           MAKE_JOBS=$(($(nproc)+1))
-          echo "Building with $MAKE_JOBS parallel jobs"
+          echo "$MAKE_JOBS thread compile"
           
           if [ "$FAKE_BUILD" = "false" ]; then
               make defconfig
-              # Disable JS minification for faster builds
               sed -i 's/CONFIG_LUCI_JSMIN=y/CONFIG_LUCI_JSMIN=n/g' .config
-              
               echo "------------- .config BEG -------------------"
-              grep -E "(ZAPRET|LUCI)" .config || true
+              cat .config
               echo "------------- .config END -------------------"
-              
-              PKGLIST="package/zapret-openwrt/zapret/compile package/zapret-openwrt/zapret-tpws/compile package/zapret-openwrt/zapret-mdig/compile package/zapret-openwrt/zapret-ip2net/compile package/zapret-openwrt/luci-app-zapret/compile"
-              
+              PKGLIST=`echo package/zapret-openwrt/{zapret,zapret-tpws,zapret-mdig,zapret-ip2net,luci-app-zapret}/compile`
               if [ "$MAX_SPEED" = "false" ]; then
-                  echo "Building with verbose output..."
                   make $PKGLIST V=s CONFIG_CCACHE=1 BUILD_LOG=1
               else
-                  echo "Building with maximum speed..."
                   make -j$MAKE_JOBS $PKGLIST CONFIG_CCACHE=1
               fi
           else
-              echo "Creating fake build artifacts..."
               OUT_DIR=./bin/packages/dev_x/base
               mkdir -p $OUT_DIR
               touch $OUT_DIR/zapret_$PKGVER-$ARCH.$PKGTYPE
-              touch $OUT_DIR/zapret-tpws_$PKGVER-$ARCH.$PKGTYPE
-              touch $OUT_DIR/zapret-mdig_$PKGVER-$ARCH.$PKGTYPE
-              touch $OUT_DIR/zapret-ip2net_$PKGVER-$ARCH.$PKGTYPE
               touch $OUT_DIR/luci-app-zapret_$PKGVER-all.$PKGTYPE
           fi
           
-          # Clean up non-zapret packages
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
           
-          # Show build statistics
-          echo "Build completed. Package list:"
-          find ./bin/packages/*/base -name "*zapret*" -type f
+          #echo ">>>>>>> build a repository index to make the output directory usable as local OPKG source"
+          #ln -s `which usign` staging_dir/host/bin/usign
+          #echo "$SIGN_KEY" | base64 -d > key-build
+          #make package/index
           
-          # Create output directory and copy packages
           OUTDIR=$GITHUB_WORKSPACE/$PKGTYPE-$ARCH
           mkdir -p $OUTDIR
           cp -R ./bin/packages/*/base/. $OUTDIR/
-          
-          # Show ccache statistics
           ./staging_dir/host/bin/ccache --max-size=10M --show-stats
           
           echo "OUTDIR=$OUTDIR" >> $GITHUB_ENV
@@ -297,16 +245,11 @@ jobs:
           BRANCH: ${{ matrix.branch }}
           LOGS_DIR: '/builder/logs'
         run: |
-          if [ -d "$LOGS_DIR" ] && [ "$(ls -A $LOGS_DIR)" ]; then
-            tar -cJf logs-$BRANCH-$ARCH.tar.xz -C $LOGS_DIR .
-          else
-            echo "No logs to compress"
-            touch logs-$BRANCH-$ARCH.tar.xz
-          fi
+          tar -cJvf logs-$BRANCH-$ARCH.tar.xz $LOGS_DIR
 
       - name: Upload packages
         if: steps.build.outcome == 'success'
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@main
         with:
           path: ${{ env.OUTDIR }}
           name: zapret,${{ env.PKGTYPE }},${{ matrix.arch }}
@@ -318,11 +261,9 @@ jobs:
         with:
           path: logs-*.tar.xz
           name: logs-${{ matrix.branch }}-${{ matrix.arch }}
-          if-no-files-found: ignore
 
   release:
     needs: [ check, build ]
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
     permissions:
       contents: write
     runs-on: ubuntu-latest
@@ -339,78 +280,31 @@ jobs:
           BUILD_DATE: ${{ needs.check.outputs.build_date }}
           PKGVER: ${{ needs.build.outputs.pkgver }}
         run: |
-          echo "Creating release packages..."
-          echo "------------- Available artifacts -------------------"
+          echo "------------- DIR BEG -------------------"
           ls -la
-          echo "----------------------------------------------------"
-          
+          echo "------------- DIR END -------------------"
           mkdir -p sorted
-          
-          # Sort IPK packages by architecture
-          find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c '
-            ARCH=$(basename "{}" | cut -d, -f3)
-            mkdir -p sorted/$ARCH
-            echo "Copying IPK packages for $ARCH"
-            cp -v "{}/"*.ipk sorted/$ARCH/ 2>/dev/null || echo "No IPK files in {}"
-          ' \;
-          
-          # Sort APK packages by architecture  
-          find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c '
-            ARCH=$(basename "{}" | cut -d, -f3)
-            mkdir -p sorted/$ARCH/apk
-            echo "Copying APK packages for $ARCH"
-            cp -v "{}/"*.apk sorted/$ARCH/apk/ 2>/dev/null || echo "No APK files in {}"
-          ' \;
-          
-          # Find and copy LuCI packages to all architectures
-          LUCI_IPK=$(find . -type f -name "luci-app-zapret*.ipk" -print | head -n 1)
-          LUCI_APK=$(find . -type f -name "luci-app-zapret*.apk" -print | head -n 1)
-          
-          if [ -n "$LUCI_IPK" ]; then
-            echo "Copying LuCI IPK to all architectures: $LUCI_IPK"
-            find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -v "$LUCI_IPK" "{}/" \;
-          fi
-          
-          if [ -n "$LUCI_APK" ]; then
-            echo "Copying LuCI APK to all APK directories: $LUCI_APK"
-            find ./sorted -name "apk" -type d -exec cp -v "$LUCI_APK" "{}/" \;
-          fi
-          
-          # Create ZIP archive
+          find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)' \;
+          find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)/apk' \;
+          find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'cp -R "{}/." sorted/$(basename "{}" | cut -d, -f3)' \;
+          find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c 'cp -R "{}/." sorted/$(basename "{}" | cut -d, -f3)/apk' \;
+          LUCI_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-app-zapret*.ipk" -print | head -n 1 )
+          LUCI_APK=$( find . -type f -path "*/zapret,apk,*/luci-app-zapret*.apk" -print | head -n 1 )
+          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
+          find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_APK" "{}/" \;
           mkdir -p public
-          ARCH="mipsel_24kc"
-          if [ -d "./sorted/$ARCH" ]; then
-            echo "Creating archive for $ARCH..."
-            7z a "./public/zapret_v${PKGVER}_${ARCH}.zip" "./sorted/$ARCH/*"
-          else
-            echo "ERROR: No packages found for $ARCH"
-            exit 1
-          fi
-          
-          echo "Created release files:"
+          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec sh -c '7z a ./public/zapret_v${PKGVER}_$(basename "{}" | cut -d, -f3).zip {}/*' \;
           ls -lh ./public/*.zip
 
-      - name: Create Release
-        uses: softprops/action-gh-release@v1
+      - name: Upload assets
+        uses: andelf/nightly-release@main
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ needs.check.outputs.tag }}
         with:
+          prerelease: ${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
           tag_name: v${{ needs.build.outputs.pkgver }}${{ env.TAG_SUFFIX }}
           name: zapret v${{ needs.build.outputs.pkgver }}
-          prerelease: ${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
           body: |
-            ## zapret v${{ needs.build.outputs.pkgver }} for OpenWrt 24.10
-            
-            ### Supported architectures:
-            - mipsel_24kc
-            
-            ### Installation:
-            ```bash
-            opkg update
-            opkg install zapret*.ipk luci-app-zapret*.ipk
-            ```
-            or luci interface
-            ```
-            ### Changes:
-            ${{ needs.check.outputs.message }}
+            zapret v${{ needs.build.outputs.pkgver }} for OpenWrt
           files: ./public/*.zip
