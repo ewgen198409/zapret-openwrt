@@ -8,9 +8,21 @@
 document.head.append(E('style', {'type': 'text/css'},
 `
 body {
-    background: url(/luci-static/resources/zapret/wallpaper.jpg) no-repeat center center fixed;
-    background-size: cover;
+    position: relative;
     min-height: 100vh;
+}
+
+body::before {
+    content: '';
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: url(/luci-static/resources/view/zapret/wallpaper.jpg) no-repeat center center;
+    background-size: cover;
+    opacity: 0.3;
+    z-index: -1;
 }
     
 .label-status {
