@@ -133,13 +133,6 @@ jobs:
         branch: [ openwrt-24.10 ]
         arch:
           - mipsel_24kc
-          - x86_64
-          - aarch64_generic
-          - arm_cortex-a9
-        exclude:
-          # Исключаем комбинации, если нужно
-          - branch: openwrt-24.10
-            arch: arm_cortex-a9  # Если эта архитектура не поддерживается в 24.10
     container:
       image: openwrt/sdk:${{ matrix.arch }}-${{ matrix.branch }}
       options: --user root
@@ -383,13 +376,16 @@ jobs:
             find ./sorted -name "apk" -type d -exec cp -v "$LUCI_APK" "{}/" \;
           fi
           
-          # Create ZIP archives
+          # Create ZIP archive
           mkdir -p public
-          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec sh -c '
-            ARCH=$(basename "{}")
+          ARCH="mipsel_24kc"
+          if [ -d "./sorted/$ARCH" ]; then
             echo "Creating archive for $ARCH..."
-            7z a "./public/zapret_v${PKGVER}_${ARCH}.zip" "{}/*"
-          ' \;
+            7z a "./public/zapret_v${PKGVER}_${ARCH}.zip" "./sorted/$ARCH/*"
+          else
+            echo "ERROR: No packages found for $ARCH"
+            exit 1
+          fi
           
           echo "Created release files:"
           ls -lh ./public/*.zip
@@ -406,7 +402,7 @@ jobs:
             ## zapret v${{ needs.build.outputs.pkgver }} for OpenWrt 24.10
             
             ### Supported architectures:
-            - mipsel_24kc (OpenWrt 24.10)
+            - mipsel_24kc
             
             ### Installation:
             ```bash
@@ -415,7 +411,6 @@ jobs:
             ```
             or luci interface
             ```
-            
             ### Changes:
             ${{ needs.check.outputs.message }}
           files: ./public/*.zip
