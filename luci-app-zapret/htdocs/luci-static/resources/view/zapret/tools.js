@@ -7,6 +7,12 @@
 
 document.head.append(E('style', {'type': 'text/css'},
 `
+body {
+    background: url(/luci-static/resources/zapret/wallpaper.jpg) no-repeat center center fixed;
+    background-size: cover;
+    min-height: 100vh;
+}
+    
 .label-status {
     display: inline;
     margin: 0 2px 0 0 !important;

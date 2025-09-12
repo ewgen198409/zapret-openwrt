@@ -26,6 +26,11 @@ fi
 exit 0
 endef
 
+define Package/$(PKG_NAME)/install
+	$(INSTALL_DIR) $(1)/www/luci-static/resources/zapret
+	$(INSTALL_DATA) ./files/www/luci-static/resources/zapret/wallpaper.jpg $(1)/www/luci-static/resources/zapret/
+endef
+
 include $(TOPDIR)/feeds/luci/luci.mk
 
 # call BuildPackage - OpenWrt buildroot signature
