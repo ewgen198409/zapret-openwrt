@@ -36,13 +36,13 @@ env:
   FAKE_BUILD: ${{ github.event.inputs.fake_build == 'true' }}
   MAX_SPEED: ${{ github.event.inputs.max_speed != 'false' }}
   TAG_SUFFIX: ${{ github.event.inputs.fake_build == 'true' && '-fake' || github.event.inputs.test_build == 'true' && '-test' || '' }}
-  REPO_URL: https://github.com/tonyst2/zapret-openwrt
-  REPO_LNK: tonyst2/zapret-openwrt
+  REPO_URL: https://github.com/ewgen198409/zapret-openwrt
+  REPO_LNK: ewgen198409/zapret-openwrt
   REPO_BRANCH: master
   BUILD_ROOT: ${{ github.workspace }}/builder
   BUILD_DATE: unknown
   REPO_DATE: unknown
-  LUCI_ARCH: aarch64_cortex-a53
+  LUCI_ARCH: mipsel_24kc
 
 jobs:
   check:
@@ -159,7 +159,7 @@ jobs:
         id: init
         working-directory: '/builder'
         env:
-          FAKE_BUILD: ${{ env.FAKE_BUILD == 'true' || ( env.TEST_BUILD == 'true' && matrix.branch == 'SNAPSHOT' ) }}
+          FAKE_BUILD: ${{ env.FAKE_BUILD == 'true' || ( env.TEST_BUILD == 'true' ) }}
           BUILD_DATE: ${{ needs.check.outputs.build_date }}
           ARCH: ${{ matrix.arch }}
           BRANCH: ${{ matrix.branch }}
