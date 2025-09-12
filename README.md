@@ -6,4 +6,4 @@ Zapret is not a VPN! Zapret is an Anti-DPI utility!
 
 ## Screenshots
 
-![image](https://github.com/user-attachments/assets/b79940b3-6a0d-4310-bd58-e461be004397)
+![image](https://github.com/ewgen198409/zapret-openwrt/blob/24.10/image.PNG)
