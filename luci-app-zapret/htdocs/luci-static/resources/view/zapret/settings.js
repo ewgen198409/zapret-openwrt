@@ -114,7 +114,13 @@ return view.extend({
             o.rawhtml = true;
             o.default = '<hr style="width: 620px; height: 1px; margin: 1px 0 1px; border-top: 1px solid;">';
             if (url) {
-                o.default += '<br/>' + _('Help') + ': <a href=%s>%s</a>'.format(url);
+                // Добавляем надпись перед help-ссылкой без горизонтальной линии
+                o.default += '<br/>' + '<div style="margin-bottom: 10px; font-weight: bold; color: #ff9000;">' + 
+                            _('Visit user discussion to select strategy!!!') + '</div>';
+                o.default += _('Help') + ': <a href=%s>%s</a>'.format(url);
+            } else {
+                // Для случаев без URL оставляем обычную горизонтальную линию
+                o.default = '<hr style="width: 620px; height: 1px; margin: 1px 0 1px; border-top: 1px solid;">';
             }
         };
 
@@ -372,7 +378,9 @@ return view.extend({
 
         let map_promise = m.render();
         map_promise.then(node => node.classList.add('fade-in'));
-        return map_promise;
+        return map_promise.then(function(node) {
+			return E('div', { 'class': 'zapret-app fade-in' }, [ node ]);
+		});
     },
 
     handleSaveApply: function(ev, mode) {

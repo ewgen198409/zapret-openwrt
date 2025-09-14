@@ -243,10 +243,11 @@ return view.extend({
         document.head.appendChild(style);
         
         ui.tabs.initTabGroup(tabs.firstElementChild.childNodes);
-        return E('div', { }, [ h2, tabs ]);
+        return E('div', { 'class': 'zapret-app' }, [ h2, tabs ]);
     },
 
     handleSaveApply: null,
     handleSave: null,
     handleReset: null
 });
+

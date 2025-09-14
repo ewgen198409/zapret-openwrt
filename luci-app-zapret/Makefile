@@ -29,6 +29,7 @@ endef
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/www/luci-static/resources/view/zapret
 	$(INSTALL_DATA) ./files/www/luci-static/resources/view/zapret/wallpaper.jpg $(1)/www/luci-static/resources/view/zapret/
+	$(INSTALL_DATA) ./files/www/luci-static/resources/view/zapret/Ubuntu-Regular.ttf $(1)/www/luci-static/resources/view/zapret/
 endef
 
 include $(TOPDIR)/feeds/luci/luci.mk

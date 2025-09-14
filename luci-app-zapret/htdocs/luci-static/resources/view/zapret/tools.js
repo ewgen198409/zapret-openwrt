@@ -7,6 +7,25 @@
 
 document.head.append(E('style', {'type': 'text/css'},
 `
+
+@font-face {
+    font-family: 'Ubuntu';
+    font-style: normal;
+    font-weight: 400;
+    src: url('/luci-static/resources/view/zapret/Ubuntu-Regular.ttf') format('truetype');
+}
+
+.zapret-app {
+    font-family: 'Ubuntu', sans-serif !important;
+}
+
+.zapret-app textarea,
+.zapret-app pre,
+.zapret-app code,
+.zapret-app .log-textarea {
+    font-family: monospace !important;
+}
+
 body {
     position: relative;
     min-height: 100vh;
@@ -78,20 +97,14 @@ return baseclass.extend({
     autoHostListFN    : '/opt/zapret/ipset/zapret-hosts-auto.txt',
     autoHostListDbgFN : '/opt/zapret/ipset/zapret-hosts-auto-debug.log',
 
-    infoLabelRunning  : '<span class="label-status running">'  + _('Running')  + '</span>',
-    infoLabelStarting : '<span class="label-status starting">' + _('Starting') + '</span>',
-    infoLabelStopped  : '<span class="label-status stopped">'  + _('Stopped')  + '</span>',
-    infoLabelDisabled : '<span class="label-status stopped">'  + _('Disabled') + '</span>',
-    infoLabelError    : '<span class="label-status error">'    + _('Error')    + '</span>',
-
     infoLabelUpdating : '<span class="label-status updating">' + _('Updating') + '</span>',
 
     statusDict: {
-        error    : { code: 0, name: _('Error')    , label: this.infoLabelError    },
-        disabled : { code: 1, name: _('Disabled') , label: this.infoLabelDisabled },
-        stopped  : { code: 2, name: _('Stopped')  , label: this.infoLabelStopped  },
-        starting : { code: 3, name: _('Starting') , label: this.infoLabelStarting },
-        running  : { code: 4, name: _('Running')  , label: this.infoLabelRunning  },
+        error    : { code: 0, name: _('Error'),    label: '<span class="label-status error">'    + _('Error')    + '</span>' },
+        disabled : { code: 1, name: _('Disabled'), label: '<span class="label-status stopped">'  + _('Disabled') + '</span>' },
+        stopped  : { code: 2, name: _('Stopped'),  label: '<span class="label-status stopped">'  + _('Stopped')  + '</span>' },
+        starting : { code: 3, name: _('Starting'), label: '<span class="label-status starting">' + _('Starting') + '</span>' },
+        running  : { code: 4, name: _('Running'),  label: '<span class="label-status running">'  + _('Running')  + '</span>' },
     },
 
     callServiceList: rpc.declare({
@@ -272,7 +285,13 @@ return baseclass.extend({
         if (result.dmn.total == 0) {
             result.status = (!svc_autorun) ? this.statusDict.disabled : this.statusDict.stopped;
         } else {
-            result.status = (result.dmn.inited) ? this.statusDict.started : this.statusDict.running;
+            if (result.dmn.working > 0) {
+                result.status = this.statusDict.running;
+            } else if (result.dmn.inited) {
+                result.status = this.statusDict.starting;
+            } else {
+                result.status = this.statusDict.stopped;
+            }
         }
         return result;
     },
@@ -282,12 +301,22 @@ return baseclass.extend({
         let svc_daemons = _('Unknown');
         
         if (typeof(svcinfo) == 'object') {
-            svc_autorun = (svcinfo.autorun) ? _('Enabled') : _('Disabled');
-            if (!svcinfo.dmn.inited) {
-                svc_daemons = _('Stopped');
+            svc_autorun = (svcinfo.autorun) 
+                ? '<span class="label-status running">' + _('Enabled') + '</span>' 
+                : '<span class="label-status error">' + _('Disabled') + '</span>';
+            if (svcinfo.status && svcinfo.status.label) {
+                svc_daemons = svcinfo.status.label;
+                if (svcinfo.dmn.inited) {
+                    svc_daemons += ' [' + svcinfo.dmn.working + '/' + svcinfo.dmn.total + ']';
+                }
             } else {
-                svc_daemons = (!svcinfo.dmn.working) ? _('Starting') : _('Running');
-                svc_daemons += ' [' + svcinfo.dmn.working + '/' + svcinfo.dmn.total + ']';
+                // Fallback for safety
+                if (!svcinfo.dmn.inited) {
+                    svc_daemons = _('Stopped');
+                } else {
+                    svc_daemons = (!svcinfo.dmn.working) ? _('Starting') : _('Running');
+                    svc_daemons += ' [' + svcinfo.dmn.working + '/' + svcinfo.dmn.total + ']';
+                }
             }
         }
         let update_mode = _('user entries only');
@@ -308,7 +337,7 @@ return baseclass.extend({
                         <td class="td left" ${td_name_style}>
                             ${_('Service daemons status')}:
                         </td>
-                        <td class="td left %s">
+                        <td class="td left">
                             ${svc_daemons}
                         </td>
                     </tr>

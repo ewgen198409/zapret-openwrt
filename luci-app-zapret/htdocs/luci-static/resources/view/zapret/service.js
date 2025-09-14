@@ -370,7 +370,7 @@ return view.extend({
         let url1 = 'https://github.com/bol-van/zapret';
         let url2 = 'https://github.com/ewgen198409/zapret-openwrt';
 
-        return E([
+        return E('div', { 'class': 'zapret-app' }, [
             E('h2', { 'class': 'fade-in' }, page_title),
             aux1,
             aux2,
@@ -393,3 +393,4 @@ return view.extend({
     handleSaveApply: null,
     handleReset    : null,
 });
+
