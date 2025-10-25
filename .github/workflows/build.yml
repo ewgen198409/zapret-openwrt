@@ -42,7 +42,7 @@ env:
   BUILD_ROOT: ${{ github.workspace }}/builder
   BUILD_DATE: unknown
   REPO_DATE: unknown
-  LUCI_ARCH: aarch64_cortex-a53
+  LUCI_ARCH: mipsel_24kc
 
 jobs:
   check:
@@ -113,7 +113,6 @@ jobs:
         branch: [ openwrt-24.10 ]
         arch:
           - mipsel_24kc
-          - aarch64_cortex-a53
         isTestOrFake:
           - ${{ needs.check.outputs.test_build == 'true' || needs.check.outputs.fake_build == 'true' }}
     container:
@@ -311,6 +310,5 @@ jobs:
             ### Supported architectures:
               '''
                 - mipsel_24kc
-                - aarch64_cortex-a53
               '''
           files: ./public/*.zip
