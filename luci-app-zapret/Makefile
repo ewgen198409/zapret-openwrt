@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-app-zapret
-PKG_VERSION:=71.20250919
+PKG_VERSION:=72.20251130
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=remittor <https://github.com/remittor>
 
@@ -24,12 +24,6 @@ if [ -z "$${IPKG_INSTROOT}" ]; then
 	[ -f "/etc/init.d/uhttpd" ] && /etc/init.d/uhttpd reload
 fi
 exit 0
-endef
-
-define Package/$(PKG_NAME)/install
-	$(INSTALL_DIR) $(1)/htdocs/luci-static/resources/view/zapret
-	$(INSTALL_DATA) ./files/www/luci-static/resources/view/zapret/wallpaper.jpg $(1)/htdocs/luci-static/resources/view/zapret/
-	$(INSTALL_DATA) ./files/www/luci-static/resources/view/zapret/Ubuntu-Regular.ttf $(1)/htdocs/luci-static/resources/view/zapret/
 endef
 
 include $(TOPDIR)/feeds/luci/luci.mk

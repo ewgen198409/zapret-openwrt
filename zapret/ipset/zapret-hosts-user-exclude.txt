@@ -18,3 +18,11 @@ dl-ssl.google.com
 android.clients.google.com
 gvt2.com
 gvt3.com
+security.debian.org
+deb.debian.org
+download.docker.com
+docker.com
+debian.org
+gosuslugi.ru
+github.com
+api.github.com
