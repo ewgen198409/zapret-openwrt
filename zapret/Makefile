@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zapret
-PKG_VERSION:=72.20251130
+PKG_VERSION:=72.20251213
 
 PKG_MAINTAINER:=bol-van
 PKG_LICENSE:=MIT
@@ -13,8 +13,8 @@ PKG_LICENSE_FILES:=docs/LICENSE.txt
 
 PKG_SOURCE_URL:=https://github.com/bol-van/zapret.git
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=14d7f27b6a7311f651136f1b7d65c81afb1354a9
-PKG_SOURCE_DATE:=2025-11-25
+PKG_SOURCE_VERSION:=0bc09971914c9ec8ad5553bf0678cb827adf5839
+PKG_SOURCE_DATE:=2025-12-13
 
 #PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 #PKG_SOURCE_URL:=https://github.com/bol-van/zapret/archive/refs/tags/v$(PKG_VERSION).tar.gz?
@@ -54,6 +54,7 @@ define Package/$(PKG_NAME)/conffiles
 /etc/config/zapret
 /opt/zapret/config
 /opt/zapret/ipset/
+/opt/zapret/init.d/openwrt/custom.d/
 endef
 
 define Package/$(PKG_NAME)/install
@@ -66,6 +67,7 @@ define Package/$(PKG_NAME)/install
 	#$(CP) $(PKG_BUILD_DIR)/docs/* $(1)/opt/zapret/docs/
 	$(INSTALL_DIR) $(1)/opt/zapret/files
 	$(CP) $(PKG_BUILD_DIR)/files/* $(1)/opt/zapret/files/
+	$(CP)                ./files/* $(1)/opt/zapret/files/
 	$(INSTALL_DIR) $(1)/opt/zapret/ipset
 	$(CP) $(PKG_BUILD_DIR)/ipset/* $(1)/opt/zapret/ipset/
 	$(INSTALL_BIN)  $(PKG_BUILD_DIR)/blockcheck.sh  $(1)/opt/zapret/blockcheck.sh
@@ -81,7 +83,6 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DATA) ./ipset/zapret-hosts-google.txt       $(1)/opt/zapret/ipset/zapret-hosts-google.txt
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset/zapret-hosts-user.txt
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user-exclude.txt $(1)/opt/zapret/ipset/zapret-hosts-user-exclude.txt
-	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset/zapret-hosts-user.txt
 	$(INSTALL_DATA) ./ipset/zapret-ip-exclude.txt         $(1)/opt/zapret/ipset/zapret-ip-exclude.txt
 	$(INSTALL_DIR) $(1)/opt/zapret/ipset_def
 	$(INSTALL_DATA) ./ipset/zapret-hosts-google.txt       $(1)/opt/zapret/ipset_def/zapret-hosts-google.txt
