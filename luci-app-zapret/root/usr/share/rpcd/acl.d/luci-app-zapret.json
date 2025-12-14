@@ -17,7 +17,8 @@
 				"/usr/bin/apk*": [ "exec" ],
 				"/usr/bin/find*": [ "exec" ],
 				"/opt/zapret/restore-def-cfg.sh*": [ "exec" ],
-				"/opt/zapret/sync_config.sh*": [ "exec" ]
+				"/opt/zapret/sync_config.sh*": [ "exec" ],
+				"/opt/zapret/blockcheck.sh*": [ "exec" ]
 			},
 			"uci": [ "zapret", "network" ],
 			"ubus": {

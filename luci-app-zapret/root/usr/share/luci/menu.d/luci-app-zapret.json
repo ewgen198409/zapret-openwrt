@@ -42,5 +42,14 @@
 			"type": "view",
 			"path": "zapret/dmnlog"
 		}
+	},
+
+	"admin/services/zapret/blockcheck": {
+		"title": "Blockcheck",
+		"order": 40,
+		"action": {
+			"type": "view",
+			"path": "zapret/blockcheck"
+		}
 	}
 }
