@@ -9,8 +9,8 @@ PKG_LICENSE_FILES:=docs/LICENSE.txt
 
 PKG_SOURCE_URL:=https://github.com/bol-van/zapret.git
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=0bc09971914c9ec8ad5553bf0678cb827adf5839
-PKG_SOURCE_DATE:=2025-12-13
+PKG_SOURCE_VERSION:=b17da98fc49a28698555e4b2639087bf438e9d23
+PKG_SOURCE_DATE:=2025-12-27
 
 #PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 #PKG_SOURCE_URL:=https://github.com/bol-van/zapret/archive/refs/tags/v$(PKG_VERSION).tar.gz?

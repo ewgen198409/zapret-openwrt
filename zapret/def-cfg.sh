@@ -186,7 +186,8 @@ function set_cfg_nfqws_strat
 				--dpi-desync-fooling=badseq
 				
 				--new
-				--filter-tcp=443 <HOSTLIST>
+				--filter-tcp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-user.txt
 				--hostlist-exclude-domains=openwrt.org
 				--dpi-desync-any-protocol=1
 				--dpi-desync-cutoff=n5
@@ -243,6 +244,42 @@ function set_cfg_nfqws_strat
 				--dpi-desync=fake
 				--dpi-desync-repeats=6
 				--dpi-desync-fake-quic=/opt/zapret/files/fake/quic_initial_www_google_com.bin
+			"
+			commit $cfgname
+		EOF
+	fi
+	if [ "$strat" = "v6_by_StressOzz" ]; then
+		uci batch <<-EOF
+			set $cfgname.config.NFQWS_PORTS_TCP='80,443'
+			set $cfgname.config.NFQWS_PORTS_UDP='443'
+			set $cfgname.config.NFQWS_OPT="
+				# Strategy $strat
+				
+				--filter-tcp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
+				--dpi-desync=fake,multidisorder
+				--dpi-desync-split-pos=1,midsld
+				--dpi-desync-repeats=1
+				--dpi-desync-fooling=badsum
+				--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+				
+				--new
+				--filter-udp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
+				--hostlist=/opt/zapret/ipset/zapret-hosts-user.txt
+				--dpi-desync=fake
+				--dpi-desync-repeats=6
+				--dpi-desync-fake-quic=/opt/zapret/files/fake/quic_initial_www_google_com.bin
+
+				--new
+				--filter-tcp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-user.txt
+				--dpi-desync=hostfakesplit
+				--dpi-desync-hostfakesplit-mod=host=rzd.ru
+				--dpi-desync-hostfakesplit-midhost=host-2
+				--dpi-desync-split-seqovl=726
+				--dpi-desync-fooling=badsum,badseq
+				--dpi-desync-badseq-increment=0
 			"
 			commit $cfgname
 		EOF
