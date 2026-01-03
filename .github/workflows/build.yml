@@ -147,7 +147,12 @@ jobs:
           sed -i 's/gpg --/#gpg --/g' setup.sh
           # disable cleanup keys
           sed -r -i 's/^rm.+//' setup.sh
-          bash -x ./setup.sh
+          # force using main OpenWrt downloads host to avoid slow mirror
+          sed -r -i "s/^FILE_HOST=.*/FILE_HOST=downloads.openwrt.org/" setup.sh || true
+          # make wget resumable and show progress to avoid silent long waits
+          sed -i "s/\bwget\b/wget -c --tries=3 --timeout=30 --show-progress/g" setup.sh || true
+          # run setup with tracing and a timeout to fail fast if it hangs
+          timeout 60m bash -x ./setup.sh || (echo "setup.sh timed out or failed" && exit 1)
           ls -lh
           if [ "$BRANCH" = "openwrt-24.10" ]; then
               echo "PKGTYPE=ipk" >> $GITHUB_ENV
