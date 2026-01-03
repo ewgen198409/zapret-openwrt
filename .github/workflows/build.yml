@@ -134,6 +134,12 @@ jobs:
           BRANCH: ${{ matrix.branch }}
         shell: bash
         run: |
+          # ensure zstd available for .zst archives
+          if ! command -v zstd >/dev/null 2>&1; then
+            apt-get update && apt-get install -y zstd
+          fi
+          tar --version || true
+          zstd --version || true
           # gpg --verbose --recv-keys 0x1D53D1877742E911
           # gpg --verbose --import <(wget -qO- 'https://git.openwrt.org/?p=keyring.git;a=blob_plain;f=gpg/0x1D53D1877742E911.asc')
           gpg --verbose --import <(wget -qO- 'https://raw.githubusercontent.com/openwrt/keyring/refs/heads/master/gpg/0x1D53D1877742E911.asc')
