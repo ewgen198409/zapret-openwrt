@@ -141,7 +141,7 @@ jobs:
           sed -i 's/gpg --/#gpg --/g' setup.sh
           # disable cleanup keys
           sed -r -i 's/^rm.+//' setup.sh
-          ./setup.sh
+          bash -x ./setup.sh
           ls -lh
           if [ "$BRANCH" = "openwrt-24.10" ]; then
               echo "PKGTYPE=ipk" >> $GITHUB_ENV
