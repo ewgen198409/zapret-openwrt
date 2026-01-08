@@ -10,7 +10,7 @@ PKG_LICENSE:=MIT
 PKG_MAINTAINER:=remittor <https://github.com/remittor>
 
 LUCI_TITLE:=LuCI support for zapret
-LUCI_DEPENDS:=+zapret
+LUCI_DEPENDS:=+zapret +ttyd
 LUCI_PKGARCH:=all
 
 define Package/$(PKG_NAME)/postinst
@@ -22,6 +22,7 @@ if [ -z "$${IPKG_INSTROOT}" ]; then
 	/etc/init.d/rpcd reload
 	[ -f "/sbin/luci-reload" ] && /sbin/luci-reload
 	[ -f "/etc/init.d/uhttpd" ] && /etc/init.d/uhttpd reload
+	[ -f "/etc/init.d/ttyd" ] && /etc/init.d/ttyd enable && /etc/init.d/ttyd start
 fi
 exit 0
 endef
