@@ -2,3 +2,4 @@ config ttyd
     option port '7681'
     option command '/bin/sh'
     option writable '1'
+    option interface '@lan'
