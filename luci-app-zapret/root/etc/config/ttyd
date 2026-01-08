@@ -1,5 +1,6 @@
 config ttyd
     option port '7681'
-    option command '/bin/sh'
+#    option command '/bin/sh'
+    option command '/bin/login'
     option writable '1'
     option interface '@lan'
