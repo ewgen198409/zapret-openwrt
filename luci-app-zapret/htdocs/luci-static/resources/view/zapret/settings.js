@@ -35,6 +35,7 @@ return view.extend({
             { code: -1}, // L.resolveDefault(fs.exec(tools.execPath, [ 'raw-status' ]), 1),
             null, // L.resolveDefault(fs.list(tools.parsersDir), null),
             uci.load(tools.appName),
+            uci.load('network'),
         ]).catch(e => {
             ui.addNotification(null, E('p', _('Unable to read the contents') + ': %s '.format(e.message) ));
         });
@@ -45,6 +46,10 @@ return view.extend({
             return;
         }
         this.appStatusCode = data[0].code;
+
+        var interfaces = [];
+        L.uci.sections('network', 'interface', function(s) { interfaces.push(s['.name']); });
+        interfaces = interfaces.filter(iface => iface !== 'loopback');
 
         let m, s, o, tabname;
 
@@ -103,6 +108,30 @@ return view.extend({
         o = s.taboption(tabname, form.Flag, 'DAEMON_LOG_ENABLE', _('DAEMON_LOG_ENABLE'));
         o.rmempty = false;
         o.default = 0;
+
+        o = s.taboption(tabname, form.MultiValue, 'OPENWRT_LAN', _('OPENWRT_LAN'));
+        o.rmempty = true;
+        o.default = [''];
+        o.value('', _('Default'));
+        if (interfaces.length > 0) {
+            interfaces.forEach(iface => o.value(iface, iface));
+        }
+
+        o = s.taboption(tabname, form.MultiValue, 'OPENWRT_WAN4', _('OPENWRT_WAN4'));
+        o.rmempty = true;
+        o.default = [''];
+        o.value('', _('Default'));
+        if (interfaces.length > 0) {
+            interfaces.forEach(iface => o.value(iface, iface));
+        }
+
+        o = s.taboption(tabname, form.MultiValue, 'OPENWRT_WAN6', _('OPENWRT_WAN6'));
+        o.rmempty = true;
+        o.default = [''];
+        o.value('', _('Default'));
+        if (interfaces.length > 0) {
+            interfaces.forEach(iface => o.value(iface, iface));
+        }
 
         /* NFQWS_OPT_DESYNC tab */
 

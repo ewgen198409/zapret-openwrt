@@ -42,8 +42,6 @@ function sync_param
 	local param=$1
 	local vtype=$2
 	local value="$( uci -q get zapret.config.$param )"
-	uncomment_param $param
-	append_param $param
 	local TAB="$( echo -n -e '\t' )"
 	if [ "$value" = "$TAB" ]; then
 		value=""
@@ -54,10 +52,24 @@ function sync_param
 	if [ "$param" = "NFQWS_OPT" -a "$value" != "" ]; then
 		value=$( echo -n "$value" | sed '/^#/d' )
 	fi
-	if [ "$vtype" = "str" ]; then
-		set_param_value_str $param "$value"
+	if [ "$param" = "OPENWRT_LAN" -o "$param" = "OPENWRT_WAN4" -o "$param" = "OPENWRT_WAN6" ]; then
+		if [ -n "$value" ]; then
+			uncomment_param $param
+			append_param $param
+			if [ "$vtype" = "str" ]; then
+				set_param_value_str $param "$value"
+			else
+				set_param_value $param $value
+			fi
+		fi
 	else
-		set_param_value $param $value
+		uncomment_param $param
+		append_param $param
+		if [ "$vtype" = "str" ]; then
+			set_param_value_str $param "$value"
+		else
+			set_param_value $param $value
+		fi
 	fi
 }
 
@@ -86,6 +98,10 @@ sync_param DISABLE_CUSTOM
 sync_param WS_USER str
 sync_param DAEMON_LOG_ENABLE
 sync_param DAEMON_LOG_FILE str
+
+sync_param OPENWRT_LAN str
+sync_param OPENWRT_WAN4 str
+sync_param OPENWRT_WAN6 str
 
 sync_param AUTOHOSTLIST_RETRANS_THRESHOLD
 sync_param AUTOHOSTLIST_FAIL_THRESHOLD
