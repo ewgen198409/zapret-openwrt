@@ -1,13 +1,104 @@
-Zapret is not a VPN! Zapret is an Anti-DPI utility!
-!!! Для работы Blockcheck необходимо чтовы все пакеты из архива были установлены.
-!!! Также желательна установка пакета dnsmasq-full вместо dnsmasq. Если удалять dnsmasq через web-интерфейс, то есть риск оставить роутер без работающего DNS, что сделает невозможным установку dnsmasq-full. Поэтому такую замену пакета рекомендуется делать через ssh в соответствии с данным рецептом. opkg update; cd /tmp/ && opkg download dnsmasq-full; opkg install ipset libnettle8 libnetfilter-conntrack3;
-opkg remove dnsmasq; opkg install dnsmasq-full --cache /tmp/; rm -f /tmp/dnsmasq-full*.ipk;
-[Instructions for installing](https://github.com/remittor/zapret-openwrt/wiki/Installing-zapret‐openwrt-package)
+# Zapret OpenWrt
 
-[Download page](https://github.com/ewgen198409/zapret-openwrt/releases)
+[![GitHub release](https://img.shields.io/github/release/ewgen198409/zapret-openwrt.svg)](https://github.com/ewgen198409/zapret-openwrt/releases)
+[![License](https://img.shields.io/github/license/ewgen198409/zapret-openwrt)](LICENSE)
 
-## Screenshots
+## Описание
 
-![image](https://github.com/ewgen198409/zapret-openwrt/blob/24.10/image.PNG)
-<img width="1886" height="879" alt="image" src="https://github.com/user-attachments/assets/65b2e021-f5c4-4eec-a8ab-cc0693c42d5f" />
+**Zapret** — это не VPN! Это утилита **Anti-DPI** (Deep Packet Inspection).
 
+Утилита предназначена для обхода DPI в сетях, где блокируется определённый контент. Она позволяет обходить цензуру и блокировки, применяя различные техники манипуляции трафиком.
+
+Проект основан на оригинальном [Zapret](https://github.com/bol-van/zapret) и адаптирован для использования в OpenWrt.
+
+## Функции
+
+- Обход DPI без использования VPN
+- Поддержка различных протоколов (HTTP, HTTPS, QUIC)
+- Интеграция с OpenWrt LuCI интерфейсом
+- Гибкая конфигурация
+- Поддержка пользовательских списков доменов и IP
+- Мониторинг и логирование
+
+## Требования
+
+- OpenWrt (рекомендуется версия 24.10+)
+- Пакет curl с поддержкой HTTP/1.3 и QUIC (необходим для Blockcheck)
+
+### Важные замечания
+
+> **Внимание!** Для работы Blockcheck необходимо, чтобы все пакеты из архива были установлены.
+
+> **Рекомендация:** Установите пакет curl с поддержкой HTTP/1.3 и QUIC. В официальном репозитории OpenWrt он без этой поддержки. Для архитектуры cortex-a53 скачайте отсюда: [openwrt-curl-prebuilt](https://github.com/vayulqq/openwrt-curl-prebuilt/releases). Для других архитектур ищите или собирайте самостоятельно.
+
+Процесс установки curl описан в [обсуждениях](https://github.com/remittor/zapret-openwrt/discussions/168#discussioncomment-15417775).
+
+## Установка
+
+### Через OPKG (рекомендуется)
+
+1. Добавьте репозиторий в `/etc/opkg/customfeeds.conf`:
+   ```
+   src/gz zapret-openwrt https://github.com/ewgen198409/zapret-openwrt/releases/download/latest
+   ```
+
+2. Обновите список пакетов:
+   ```bash
+   opkg update
+   ```
+
+3. Установите пакеты:
+   ```bash
+   opkg install zapret zapret-ip2net zapret-mdig zapret-tpws luci-app-zapret
+   ```
+
+### Ручная установка
+
+Скачайте архивы с [релизов](https://github.com/ewgen198409/zapret-openwrt/releases) и установите пакеты вручную.
+
+Подробные инструкции: [Installing zapret-openwrt package](https://github.com/remittor/zapret-openwrt/wiki/Installing-zapret‐openwrt-package)
+
+## Использование
+
+После установки пакет доступен через LuCI интерфейс: **Services → Zapret**.
+
+### Основные компоненты:
+
+- **Blockcheck**: Проверка блокировки сайтов
+- **Settings**: Основные настройки
+- **Tools**: Дополнительные инструменты
+- **Service**: Управление службой
+- **DMN Log**: Просмотр логов демонов
+
+## Конфигурация
+
+Конфигурация осуществляется через LuCI интерфейс или напрямую в файлах `/etc/config/zapret`.
+
+Поддерживаются пользовательские списки:
+- `zapret/files/zapret-hosts-user.txt` — пользовательские домены для обработки
+- `zapret/files/zapret-hosts-user-exclude.txt` — исключения
+- `zapret/files/zapret-ip-exclude.txt` — исключения по IP
+
+## Скриншоты
+
+### Основной интерфейс
+![Основной скриншот](https://github.com/ewgen198409/zapret-openwrt/blob/24.10/image.PNG)
+
+### Детальный вид
+<img width="1886" height="879" alt="Интерфейс Zapret" src="https://github.com/user-attachments/assets/65b2e021-f5c4-4eec-a8ab-cc0693c42d5f" />
+
+## Поддержка и обратная связь
+
+- **Issues**: [GitHub Issues](https://github.com/ewgen198409/zapret-openwrt/issues)
+- **Discussions**: [GitHub Discussions](https://github.com/ewgen198409/zapret-openwrt/discussions)
+- **Wiki**: [Документация](https://github.com/remittor/zapret-openwrt/wiki)
+
+## Лицензия
+
+Этот проект распространяется под лицензией MIT. См. [LICENSE](LICENSE) для подробностей.
+
+## Благодарности
+
+- Оригинальный проект [Zapret](https://github.com/bol-van/zapret)
+- Проект [remittor/zapret-openwrt](https://github.com/remittor/zapret-openwrt)
+- Сообщество OpenWrt
