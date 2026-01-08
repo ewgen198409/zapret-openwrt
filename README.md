@@ -1,6 +1,7 @@
 # Zapret OpenWrt
 
 [![GitHub release](https://img.shields.io/github/release/ewgen198409/zapret-openwrt.svg)](https://github.com/ewgen198409/zapret-openwrt/releases)
+[![Downloads](https://img.shields.io/github/downloads/ewgen198409/zapret-openwrt/total.svg)](https://github.com/ewgen198409/zapret-openwrt/releases)
 [![License](https://img.shields.io/github/license/ewgen198409/zapret-openwrt)](LICENSE)
 
 ## Описание
