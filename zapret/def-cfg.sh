@@ -284,6 +284,52 @@ function set_cfg_nfqws_strat
 			commit $cfgname
 		EOF
 	fi
+	if [ "$strat" = "v7_by_Ewgeniy1984" ]; then
+		uci batch <<-EOF
+			set $cfgname.config.MODE_FILTER='hostlist'
+			set $cfgname.config.NFQWS_PORTS_TCP='80,443'
+			set $cfgname.config.NFQWS_PORTS_UDP='443'
+			set $cfgname.config.NFQWS_OPT="
+				# Strategy $strat
+				
+				# ============== Youtube ================================
+				--filter-tcp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
+				--dpi-desync=multidisorder
+				--dpi-desync-split-pos=2
+				--new
+				--filter-udp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
+				--dpi-desync=fake
+				--dpi-desync-fake-quic=/opt/zapret/files/fake/quic_initial_www_google_com.bin
+				# ========================================================================
+				# =============== Hostlist user ==========================================
+				--new
+				--filter-tcp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-user.txt
+				--dpi-desync=hostfakesplit
+				--dpi-desync-hostfakesplit-mod=host=rzd.ru
+				--dpi-desync-hostfakesplit-midhost=host-2
+				--dpi-desync-split-seqovl=726
+				--dpi-desync-fooling=badsum,badseq
+				--dpi-desync-badseq-increment=0
+				# =========================================================================
+				# =============== Test whatsapp ===============================================
+				--new
+				--filter-tcp=443
+				--hostlist=/opt/zapret/ipset/cust1.txt
+				--dpi-desync=hostfakesplit
+				--dpi-desync-fooling=md5sig
+				--new
+				--filter-udp=443
+				--hostlist=/opt/zapret/ipset/cust1.txt
+				--dpi-desync=fake
+				--dpi-desync-repeats=2
+				# ================================================================================
+			"
+			commit $cfgname
+		EOF
+	fi
 	return 0
 }
 

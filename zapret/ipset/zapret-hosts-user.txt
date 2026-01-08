@@ -1,6 +1,14 @@
+api.cline.bot
+cline.bot
+app.cline.bot
+authkit.cline.bot
+duckdns.org
 copilot.microsoft.com
 dl.registry.platformio.org
 esphome.io
+mega.nz
+mega.io
+mega.co.nz
 4pda.ru
 speedtest.net
 rutor.info
@@ -281,4 +289,3 @@ cloudflaretest.com
 cloudflare.com
 ns.cloudflare.com
 gabe.ns.cloudflare.com
-

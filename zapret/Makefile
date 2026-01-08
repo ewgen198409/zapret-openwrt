@@ -84,6 +84,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset/zapret-hosts-user.txt
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user-exclude.txt $(1)/opt/zapret/ipset/zapret-hosts-user-exclude.txt
 	$(INSTALL_DATA) ./ipset/zapret-ip-exclude.txt         $(1)/opt/zapret/ipset/zapret-ip-exclude.txt
+	$(INSTALL_DATA) ./ipset/cust1.txt         $(1)/opt/zapret/ipset/cust1.txt
 	$(INSTALL_DIR) $(1)/opt/zapret/ipset_def
 	$(INSTALL_DATA) ./ipset/zapret-hosts-google.txt       $(1)/opt/zapret/ipset_def/zapret-hosts-google.txt
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset_def/zapret-hosts-user.txt

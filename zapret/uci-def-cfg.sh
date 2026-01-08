@@ -12,6 +12,7 @@
 [ ! -f "/opt/zapret/ipset/zapret-ip-user.txt"          ] && touch "/opt/zapret/ipset/zapret-ip-user.txt"
 [ ! -f "/opt/zapret/ipset/zapret-ip-user-exclude.txt"  ] && touch "/opt/zapret/ipset/zapret-ip-user-exclude.txt"
 [ ! -f "/opt/zapret/ipset/zapret-ip-user-ipban.txt"    ] && touch "/opt/zapret/ipset/zapret-ip-user-ipban.txt"
+[ ! -f "/opt/zapret/ipset/cust1.txt"                   ] && touch "/opt/zapret/ipset/cust1.txt"
 
 # create or merge uci-config
 $ZAPRET_BASE/renew-cfg.sh
