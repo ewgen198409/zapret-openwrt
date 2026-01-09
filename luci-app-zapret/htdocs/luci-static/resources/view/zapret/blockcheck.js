@@ -232,13 +232,11 @@ return view.extend({
 
         var helpButton = E('button', {
             'class': 'cbi-button cbi-button-neutral',
-            'style': 'position: absolute; top: 10px; left: 10px; z-index: 1000;',
             'click': ui.createHandlerFn(this, this.showHelp),
         }, _('Help'));
 
         var createCommandButton = E('button', {
             'class': 'cbi-button cbi-button-neutral',
-            'style': 'position: absolute; top: 10px; left: 80px; z-index: 1000;',
             'click': ui.createHandlerFn(this, this.showCreateCommand),
         }, _('Create command'));
 
@@ -248,11 +246,26 @@ return view.extend({
             'sandbox': 'allow-scripts allow-same-origin',
         });
 
+        var helpButtonTerminal = E('button', {
+            'class': 'cbi-button cbi-button-neutral',
+            'style': 'position: absolute; top: 30px; left: calc(5vw + 0px); z-index: 1000;',
+            'click': ui.createHandlerFn(this, this.showHelp),
+        }, _('Help'));
+
+        var createCommandButtonTerminal = E('button', {
+            'class': 'cbi-button cbi-button-neutral',
+            'style': 'position: absolute; top: 30px; left: calc(5vw + 70px); z-index: 1000;',
+            'click': ui.createHandlerFn(this, this.showCreateCommand),
+        }, _('Create command'));
+
         return E('div', { 'class': 'zapret-app', 'style': 'width:100vw; height:100vh; position: relative; margin-left: calc(-50vw + 50%); background-image: url(/luci-static/resources/view/zapret/wallpaper.jpg); background-size: cover; background-position: center; background-attachment: fixed;' }, [
-            helpButton,
-            createCommandButton,
             E('div', {'style': 'text-align: center;'}, h2),
             E('div', {'class': 'cbi-section-descr', 'style': 'text-align: center;'}, _('Terminal window for running blockcheck.sh to test DPI bypass strategies.')),
+            E('div', {'style': 'margin-left: 5vw; margin-bottom: 0px; padding-left: 10px;'}, [
+                helpButtonTerminal,
+                E('span', {}, ' '),
+                createCommandButtonTerminal
+            ]),
             terminalIframe,
         ]);
     },
