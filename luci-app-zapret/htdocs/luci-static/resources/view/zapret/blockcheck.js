@@ -28,45 +28,62 @@ return view.extend({
         }, _('Copy'));
 
         var params = [
-            { name: 'CURL', desc: 'замена программы curl', value: true },
+            { name: 'CURL', desc: 'замена программы curl', default: 'curl', value: true },
             { name: 'CURL_MAX_TIME', desc: 'время таймаута curl в секундах', default: '2', value: true },
             { name: 'CURL_MAX_TIME_QUIC', desc: 'время таймаута curl для quic', default: '2', value: true },
             { name: 'CURL_MAX_TIME_DOH', desc: 'время таймаута curl для DoH серверов', default: '2', value: true },
-            { name: 'CURL_CMD', desc: 'показывать команды curl (0|1)', value: true },
+            { name: 'CURL_CMD', desc: 'показывать команды curl (0|1)', default: '0', value: true },
             { name: 'CURL_OPT', desc: 'дополнительные параметры curl. `-k` - игнор сертификатов. `-v` - подробный вывод протокола', value: true },
-            { name: 'CURL_HTTPS_GET', desc: 'использовать метод GET вместо HEAD для https (0|1)', value: true },
+            { name: 'CURL_HTTPS_GET', desc: 'использовать метод GET вместо HEAD для https (0|1)', default: '0', value: true },
             { name: 'DOMAINS', desc: 'список тестируемых доменов через пробел', default: 'rutracker.org', value: true },
             { name: 'IPVS', desc: 'тестируемые версии ip протокола (4|6|46)', default: '4', value: true },
-            { name: 'ENABLE_HTTP', desc: 'включить тест plain http (0|1)', value: true },
-            { name: 'ENABLE_HTTPS_TLS12', desc: 'включить тест https TLS 1.2 (0|1)', value: true },
-            { name: 'ENABLE_HTTPS_TLS13', desc: 'включить тест https TLS 1.3 (0|1)', value: true },
-            { name: 'ENABLE_HTTP3', desc: 'включить тест QUIC (0|1)', value: true },
+            { name: 'ENABLE_HTTP', desc: 'включить тест plain http (0|1)', default: '1', value: true },
+            { name: 'ENABLE_HTTPS_TLS12', desc: 'включить тест https TLS 1.2 (0|1)', default: '1', value: true },
+            { name: 'ENABLE_HTTPS_TLS13', desc: 'включить тест https TLS 1.3 (0|1)', default: '0', value: true },
+            { name: 'ENABLE_HTTP3', desc: 'включить тест QUIC (0|1)', default: '0', value: true },
             { name: 'REPEATS', desc: 'количество попыток тестирования', default: '1', value: true },
-            { name: 'PARALLEL', desc: 'включить параллельные попытки (0|1)', value: true },
+            { name: 'PARALLEL', desc: 'включить параллельные попытки (0|1)', default: '0', value: true },
             { name: 'SCANLEVEL', desc: 'уровень сканирования (quick|standard|force)', default: 'standard', value: true },
-            { name: 'BATCH', desc: 'пакетный режим без вопросов (0|1)', value: true },
+            { name: 'BATCH', desc: 'пакетный режим без вопросов (0|1)', default: '0', value: true },
             { name: 'HTTP_PORT', desc: 'номера портов для http', default: '80', value: true },
             { name: 'HTTPS_PORT', desc: 'номера портов для https', default: '443', value: true },
             { name: 'QUIC_PORT', desc: 'номера портов для quic', default: '443', value: true },
             { name: 'PKTWS_EXTRA', desc: 'дополнительные параметры nfqws/dvtws/winws', value: true },
             { name: 'TPWS_EXTRA', desc: 'дополнительные параметры tpws', value: true },
-            { name: 'SECURE_DNS', desc: 'принудительно выключить или включить DoH (0|1)', value: true },
-            { name: 'DOH_SERVERS', desc: 'список URL DoH', value: true },
-            { name: 'DOH_SERVER', desc: 'конкретный DoH URL', value: true },
+            { name: 'SECURE_DNS', desc: 'принудительно выключить или включить DoH (0|1)', default: '0', value: true },
+            { name: 'DOH_SERVERS', desc: 'список URL DoH', default: 'https://cloudflare-dns.com/dns-query https://dns.google/dns-query https://dns.quad9.net/dns-query https://dns.adguard.com/dns-query https://common.dot.dns.yandex.net/dns-query', value: true },
+            { name: 'DOH_SERVER', desc: 'конкретный DoH URL, отказ от поиска', value: true },
             { name: 'UNBLOCKED_DOM', desc: 'незаблокированный домен для тестов IP block', default: 'iana.org', value: true },
             { name: 'MIN_TTL', desc: 'пределы тестов с TTL', default: '1', value: true },
             { name: 'MAX_TTL', desc: 'пределы тестов с TTL', default: '12', value: true },
             { name: 'MIN_AUTOTTL_DELTA', desc: 'пределы тестов с autottl', default: '1', value: true },
             { name: 'MAX_AUTOTTL_DELTA', desc: 'пределы тестов с autottl', default: '5', value: true },
-            { name: 'SIMULATE', desc: 'режим симуляции (0|1)', value: true },
+            { name: 'SIMULATE', desc: 'режим симуляции (0|1)', default: '0', value: true },
             { name: 'SIM_SUCCESS_RATE', desc: 'вероятность успеха симуляции', default: '10', value: true },
-            { name: 'SKIP_DNSCHECK', desc: 'отказ от проверки DNS (0|1)', value: false },
-            { name: 'SKIP_IPBLOCK', desc: 'отказ от тестов блокировки по порту или IP (0|1)', value: false },
-            { name: 'SKIP_TPWS', desc: 'отказ от тестов tpws (0|1)', value: false },
-            { name: 'SKIP_PKTWS', desc: 'отказ от тестов nfqws/dvtws/winws (0|1)', value: false },
+            { name: 'SKIP_DNSCHECK', desc: 'отказ от проверки DNS', value: false },
+            { name: 'SKIP_IPBLOCK', desc: 'отказ от тестов блокировки по порту или IP', value: false },
+            { name: 'SKIP_TPWS', desc: 'отказ от тестов tpws', value: false },
+            { name: 'SKIP_PKTWS', desc: 'отказ от тестов nfqws/dvtws/winws', value: false },
         ];
 
         var paramElements = [];
+        var batchTriggerParams = ['DOMAINS', 'IPVS', 'ENABLE_HTTP', 'ENABLE_HTTPS_TLS12', 'ENABLE_HTTPS_TLS13', 'ENABLE_HTTP3', 'SCANLEVEL'];
+
+        function updateBatchCheckbox() {
+            var allChecked = batchTriggerParams.every(function(param) {
+                var cb = document.getElementById('param_' + param);
+                return cb && cb.checked;
+            });
+            var batchCb = document.getElementById('param_BATCH');
+            var batchInput = document.getElementById('value_BATCH');
+            if (batchCb) {
+                batchCb.checked = allChecked;
+            }
+            if (batchInput) {
+                batchInput.value = allChecked ? '1' : '0';
+            }
+        }
+
         params.forEach(function(param) {
             var checkbox = E('input', {
                 'type': 'checkbox',
@@ -89,6 +106,10 @@ return view.extend({
                     'value': param.default,
                     'style': 'margin-left: 10px; width: 100px;',
                 });
+            }
+
+            if (batchTriggerParams.includes(param.name)) {
+                checkbox.addEventListener('change', updateBatchCheckbox);
             }
 
             paramElements.push(E('div', {
@@ -258,7 +279,7 @@ return view.extend({
             'click': ui.createHandlerFn(this, this.showCreateCommand),
         }, _('Create command'));
 
-        return E('div', { 'class': 'zapret-app', 'style': 'width:100vw; height:100vh; position: relative; margin-left: calc(-50vw + 50%); background-image: url(/luci-static/resources/view/zapret/wallpaper.jpg); background-size: cover; background-position: center; background-attachment: fixed;' }, [
+        return E('div', { 'class': 'zapret-app', 'style': 'width:100vw; height:100vh; position: relative; margin-left: calc(-50vw + 50%); overflow-x: hidden; background-image: url(/luci-static/resources/view/zapret/wallpaper.jpg); background-size: cover; background-position: center; background-attachment: fixed;' }, [
             E('div', {'style': 'text-align: center;'}, h2),
             E('div', {'class': 'cbi-section-descr', 'style': 'text-align: center;'}, _('Terminal window for running blockcheck.sh to test DPI bypass strategies.')),
             E('div', {'style': 'margin-left: 5vw; margin-bottom: 0px; padding-left: 10px;'}, [
