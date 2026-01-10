@@ -24,5 +24,3 @@ download.docker.com
 docker.com
 debian.org
 gosuslugi.ru
-github.com
-api.github.com

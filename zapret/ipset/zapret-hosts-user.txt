@@ -1,3 +1,5 @@
+github.com
+api.github.com
 api.cline.bot
 cline.bot
 app.cline.bot
