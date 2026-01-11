@@ -240,16 +240,26 @@ jobs:
           echo ">>>>>>> build a repository index to make the output directory usable as local OPKG source"
           PKG_DIR=./bin/packages/*/base
           cd $PKG_DIR || exit 1
-          ../../../../../staging_dir/host/bin/opkg-make-index . > Packages && gzip Packages || (
-            echo "opkg-make-index failed, trying manual generation"
+          (
+            echo "Trying manual generation of Packages"
             > Packages
             for pkg in *.ipk; do
               if [ -f "$pkg" ]; then
-                ar p "$pkg" control.tar.gz 2>/dev/null | tar -xzO ./control 2>/dev/null >> Packages
+                # Check if control.tar.gz or control.tar exists
+                if ar t "$pkg" 2>/dev/null | grep -q '^control\.tar\.gz$'; then
+                  ar p "$pkg" control.tar.gz 2>/dev/null | tar -xzO ./control 2>/dev/null >> Packages
+                elif ar t "$pkg" 2>/dev/null | grep -q '^control\.tar$'; then
+                  ar p "$pkg" control.tar 2>/dev/null | tar -xO ./control 2>/dev/null >> Packages
+                fi
                 echo "" >> Packages
               fi
             done
-            gzip Packages
+            if [ -s Packages ]; then
+              gzip Packages
+            else
+              echo "No packages found or failed to extract control"
+              exit 1
+            fi
           )
           
           OUTDIR=$GITHUB_WORKSPACE/$PKGTYPE-$ARCH
