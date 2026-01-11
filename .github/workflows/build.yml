@@ -239,8 +239,8 @@ jobs:
 
           echo ">>>>>>> build a repository index to make the output directory usable as local OPKG source"
           PKG_DIR=./bin/packages/*/base
-          cd $PKG_DIR || exit 1
           (
+            cd $PKG_DIR || exit 1
             echo "Trying manual generation of Packages"
             > Packages
             for pkg in *.ipk; do
@@ -261,10 +261,10 @@ jobs:
               exit 1
             fi
           )
-          
+
           OUTDIR=$GITHUB_WORKSPACE/$PKGTYPE-$ARCH
           mkdir -p $OUTDIR
-          cp -R ../../../bin/packages/*/base/. $OUTDIR/
+          cp -R $PKG_DIR/. $OUTDIR/
           ./staging_dir/host/bin/ccache --max-size=10M --show-stats
           
           echo "OUTDIR=$OUTDIR" >> $GITHUB_ENV
