@@ -238,11 +238,15 @@ jobs:
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
 
           echo ">>>>>>> build a repository index to make the output directory usable as local OPKG source"
+          PKG_DIR=./bin/packages/*/base
+          cd $PKG_DIR || exit 1
           make -j1 V=s package/index || (
             echo "make package/index failed, trying manual generation"
+            > Packages
             for pkg in *.ipk; do
               if [ -f "$pkg" ]; then
                 ar p "$pkg" control.tar.gz | tar -xzO ./control >> Packages
+                echo "" >> Packages
               fi
             done
             gzip Packages
