@@ -236,11 +236,9 @@ jobs:
           fi
           
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
-          
-          #echo ">>>>>>> build a repository index to make the output directory usable as local OPKG source"
-          #ln -s `which usign` staging_dir/host/bin/usign
-          #echo "$SIGN_KEY" | base64 -d > key-build
-          #make package/index
+
+          echo ">>>>>>> build a repository index to make the output directory usable as local OPKG source"
+          make package/index
           
           OUTDIR=$GITHUB_WORKSPACE/$PKGTYPE-$ARCH
           mkdir -p $OUTDIR
@@ -286,7 +284,7 @@ jobs:
         with:
           pattern: zapret,*
 
-      - name: Put packages into zip
+      - name: Prepare release files
         env:
           TAG: ${{ needs.check.outputs.tag }}
           DATE: ${{ needs.check.outputs.date }}
@@ -305,24 +303,41 @@ jobs:
           LUCI_APK=$( find . -type f -path "*/zapret,apk,*/luci-app-zapret*.apk" -print | head -n 1 )
           find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
           find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_APK" "{}/" \;
-          mkdir -p public
-          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec sh -c '7z a ./public/zapret_v${PKGVER}_$(basename "{}" | cut -d, -f3).zip {}/*' \;
-          ls -lh ./public/*.zip
+          # Prepare files for upload with paths
+          mkdir -p release_files
+          for arch_dir in sorted/*/; do
+            arch=$(basename "$arch_dir")
+            for file in "$arch_dir"/*; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                cp "$file" "release_files/${arch}/${filename}"
+              fi
+            done
+          done
+          # Also copy apk subdirs if any
+          for apk_dir in sorted/*/apk/; do
+            arch=$(basename "$(dirname "$apk_dir")")
+            mkdir -p "release_files/${arch}"
+            for file in "$apk_dir"/*; do
+              if [ -f "$file" ]; then
+                filename=$(basename "$file")
+                cp "$file" "release_files/${arch}/${filename}"
+              fi
+            done
+          done
+          ls -la release_files/
 
-      - name: Upload assets
-        uses: andelf/nightly-release@main
+      - name: Create and upload release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           TAG: ${{ needs.check.outputs.tag }}
-        with:
-          prerelease: ${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
-          tag_name: v${{ needs.build.outputs.pkgver }}${{ env.TAG_SUFFIX }}
-          name: zapret v${{ needs.build.outputs.pkgver }}
-          body: |
-            ### zapret v${{ needs.build.outputs.pkgver }} for OpenWrt 24.10
-            ### Supported architectures:
-              '''
-                - mipsel_24kc
-                - aarch64_cortex-a53
-              '''
-          files: ./public/*.zip
+          PKGVER: ${{ needs.build.outputs.pkgver }}
+        run: |
+          TAG_NAME="v${PKGVER}${{ env.TAG_SUFFIX }}"
+          # Create release if not exists
+          gh release create "$TAG_NAME" --title "zapret v${PKGVER}" --notes "### zapret v${PKGVER} for OpenWrt 24.10
+          ### Supported architectures:
+          - mipsel_24kc
+          - aarch64_cortex-a53" --prerelease=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }} || true
+          # Upload files with paths
+          find release_files -type f -exec sh -c 'arch=$(echo "$1" | cut -d/ -f2); filename=$(basename "$1"); gh release upload "$TAG_NAME" "$1" --name "$arch/$filename" --clobber' _ {} \;
