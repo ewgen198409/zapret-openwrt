@@ -36,21 +36,18 @@
 
 ## Установка
 
-### Через OPKG (рекомендуется)
+### Через SSH (рекомендуется)
 
-1. Добавьте репозиторий в `/etc/opkg/customfeeds.conf`:
-   ```
-   src/gz zapret-openwrt https://github.com/ewgen198409/zapret-openwrt/releases/download/latest
-   ```
+Поддерживаемые архитектуры: mipsel_24kc, aarch64_cortex-a53.
 
-2. Обновите список пакетов:
+1. Скачайте и распакуйте архив для вашей архитектуры:
    ```bash
-   opkg update
+   cd /tmp && wget https://github.com/ewgen198409/zapret-openwrt/releases/download/latest/zapret-openwrt-<ваша_архитектура>.tar.gz && tar -xzf zapret-openwrt-<ваша_архитектура>.tar.gz
    ```
 
-3. Установите пакеты:
+2. Установите пакеты:
    ```bash
-   opkg install zapret zapret-ip2net zapret-mdig zapret-tpws luci-app-zapret
+   opkg install zapret.ipk zapret-ip2net.ipk zapret-mdig.ipk zapret-tpws.ipk luci-app-zapret.ipk
    ```
 
 ### Ручная установка
