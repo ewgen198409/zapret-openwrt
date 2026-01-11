@@ -238,7 +238,15 @@ jobs:
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
 
           echo ">>>>>>> build a repository index to make the output directory usable as local OPKG source"
-          make package/index
+          make -j1 V=s package/index || (
+            echo "make package/index failed, trying manual generation"
+            for pkg in *.ipk; do
+              if [ -f "$pkg" ]; then
+                ar p "$pkg" control.tar.gz | tar -xzO ./control >> Packages
+              fi
+            done
+            gzip Packages
+          )
           
           OUTDIR=$GITHUB_WORKSPACE/$PKGTYPE-$ARCH
           mkdir -p $OUTDIR
