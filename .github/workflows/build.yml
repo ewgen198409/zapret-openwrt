@@ -316,6 +316,7 @@ jobs:
           echo "------------- DIR BEG -------------------"
           ls -la
           echo "------------- DIR END -------------------"
+          rm -rf sorted release_files
           mkdir -p sorted
           find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)' \;
           find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)/apk' \;
