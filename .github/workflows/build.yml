@@ -330,6 +330,8 @@ jobs:
           mkdir -p release_files
           for arch_dir in sorted/*/; do
             arch=$(basename "$arch_dir")
+            rm -rf "release_files/${arch}"
+            mkdir -p "release_files/${arch}"
             for file in "$arch_dir"/*; do
               if [ -f "$file" ]; then
                 filename=$(basename "$file")
