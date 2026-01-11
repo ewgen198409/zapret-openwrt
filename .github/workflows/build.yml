@@ -361,12 +361,12 @@ jobs:
         run: |
           TAG_NAME="v${PKGVER}${{ env.TAG_SUFFIX }}"
           # Create release if not exists
-          gh release create "$TAG_NAME" --title "zapret v${PKGVER}" --notes "### zapret v${PKGVER} for OpenWrt 24.10
+          gh release create "$TAG_NAME" --repo ${REPO_LNK} --title "zapret v${PKGVER}" --notes "### zapret v${PKGVER} for OpenWrt 24.10
           ### Supported architectures:
           - mipsel_24kc
           - aarch64_cortex-a53" --prerelease=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }} || true
           # Get release ID
-          RELEASE_ID=$(gh release view "$TAG_NAME" --json id -q .id)
+          RELEASE_ID=$(gh release view "$TAG_NAME" --repo ${REPO_LNK} --json id -q .id)
           # Upload files with paths using curl
           for file in release_files/*/*; do
             arch=$(basename "$(dirname "$file")")
