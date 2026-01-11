@@ -264,7 +264,7 @@ jobs:
           
           OUTDIR=$GITHUB_WORKSPACE/$PKGTYPE-$ARCH
           mkdir -p $OUTDIR
-          cp -R ./bin/packages/*/base/. $OUTDIR/
+          cp -R ../../../bin/packages/*/base/. $OUTDIR/
           ./staging_dir/host/bin/ccache --max-size=10M --show-stats
           
           echo "OUTDIR=$OUTDIR" >> $GITHUB_ENV
