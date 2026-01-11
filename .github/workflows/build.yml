@@ -355,6 +355,7 @@ jobs:
       - name: Create and upload release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_LNK: ewgen198409/zapret-openwrt
           TAG: ${{ needs.check.outputs.tag }}
           PKGVER: ${{ needs.build.outputs.pkgver }}
         run: |
@@ -364,5 +365,17 @@ jobs:
           ### Supported architectures:
           - mipsel_24kc
           - aarch64_cortex-a53" --prerelease=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }} || true
-          # Upload files with paths
-          find release_files -type f -exec sh -c 'arch=$(echo "$1" | cut -d/ -f2); filename=$(basename "$1"); gh release upload "$TAG_NAME" "$1" --name "$arch/$filename" --clobber' _ {} \;
+          # Get release ID
+          RELEASE_ID=$(gh release view "$TAG_NAME" --json id -q .id)
+          # Upload files with paths using curl
+          for file in release_files/*/*; do
+            arch=$(basename "$(dirname "$file")")
+            filename=$(basename "$file")
+            asset_name="${arch}/${filename}"
+            echo "Uploading $file as $asset_name"
+            curl -X POST \
+              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+              -H "Content-Type: application/octet-stream" \
+              --data-binary @"$file" \
+              "https://uploads.github.com/repos/${REPO_LNK}/releases/${RELEASE_ID}/assets?name=${asset_name}"
+          done
