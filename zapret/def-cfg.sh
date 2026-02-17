@@ -295,37 +295,30 @@ function set_cfg_nfqws_strat
 				# ============== Youtube ================================
 				--filter-tcp=443
 				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
-				--dpi-desync=multidisorder
-				--dpi-desync-split-pos=2
+				--dpi-desync=fake,multisplit
+				--dpi-desync-split-seqovl=654
+				--dpi-desync-split-pos=1
+				--dpi-desync-fooling=badseq,badsum
+				--dpi-desync-split-seqovl-pattern=/opt/zapret/files/fake/stun.bin
+				--dpi-desync-fake-tls=/opt/zapret/files/fake/stun.bin
+				--dpi-desync-badseq-increment=0
 				--new
 				--filter-udp=443
 				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
 				--dpi-desync=fake
 				--dpi-desync-fake-quic=/opt/zapret/files/fake/quic_initial_www_google_com.bin
 				# ========================================================================
-				# =============== Hostlist user ==========================================
+				# =============== Auto Hostlist user ==========================================
 				--new
 				--filter-tcp=443
-				--hostlist=/opt/zapret/ipset/zapret-hosts-user.txt
+				--hostlist-exclude=/opt/zapret/ipset/zapret-hosts-user-exclude.txt
 				--dpi-desync=hostfakesplit
-				--dpi-desync-hostfakesplit-mod=host=rzd.ru
+				--dpi-desync-hostfakesplit-mod=host=4pda.to
 				--dpi-desync-hostfakesplit-midhost=host-2
 				--dpi-desync-split-seqovl=726
 				--dpi-desync-fooling=badsum,badseq
 				--dpi-desync-badseq-increment=0
 				# =========================================================================
-				# =============== Test whatsapp ===============================================
-				--new
-				--filter-tcp=443
-				--hostlist=/opt/zapret/ipset/cust1.txt
-				--dpi-desync=hostfakesplit
-				--dpi-desync-fooling=md5sig
-				--new
-				--filter-udp=443
-				--hostlist=/opt/zapret/ipset/cust1.txt
-				--dpi-desync=fake
-				--dpi-desync-repeats=2
-				# ================================================================================
 			"
 			commit $cfgname
 		EOF
@@ -336,7 +329,7 @@ function set_cfg_nfqws_strat
 function set_cfg_default_values
 {
 	local opt_flags=${1:--}
-	local opt_strat=${2:-v2_by_StressOzz}
+	local opt_strat=${2:-v7_by_Ewgeniy1984}
 	local cfgname=${3:-$ZAPRET_CFG_NAME}
 
 	if ! echo "$opt_flags" | grep -q "(skip_base)"; then
