@@ -8,7 +8,7 @@
 
 !!! Два разп чтобы не накапливался в автолисте rr00--......  от ютуб видео
 
-!!! поставить Autohostlist
+!!! Поставить галочку Autohostlist
 
 --filter-tcp=443 <HOSTLIST>
 --hostlist-exclude=/opt/zapret/ipset/zapret-hosts-user-exclude.txt
