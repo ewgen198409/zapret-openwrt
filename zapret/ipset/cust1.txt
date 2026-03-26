@@ -1,0 +1,2 @@
+# Custom ipset for users
+# Add your custom IPs or domains here
