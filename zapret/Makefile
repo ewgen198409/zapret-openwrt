@@ -69,7 +69,7 @@ define Package/$(PKG_NAME)/install
 	$(CP) $(PKG_BUILD_DIR)/files/* $(1)/opt/zapret/files/
 	$(CP) ./files/* $(1)/opt/zapret/files/
 	$(INSTALL_DIR) $(1)/opt/zapret/ipset
-	$(CP) $(PKG_BUILD_DIR)/ipset/* $(1)/opt/zapret/ipset/
+	$(CP) ./ipset/* $(1)/opt/zapret/ipset/
 	$(INSTALL_BIN)  $(PKG_BUILD_DIR)/blockcheck.sh  $(1)/opt/zapret/blockcheck.sh
 	#$(INSTALL_DATA) $(PKG_BUILD_DIR)/config.default $(1)/opt/zapret/config.default
 	$(INSTALL_DIR) $(1)/opt/zapret/tmp
@@ -80,11 +80,6 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./init.d.sh $(1)/etc/init.d/zapret
 	$(INSTALL_DATA) ./config.default $(1)/opt/zapret/config.default
-	$(INSTALL_DATA) ./ipset/zapret-hosts-google.txt       $(1)/opt/zapret/ipset/zapret-hosts-google.txt
-	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset/zapret-hosts-user.txt
-	$(INSTALL_DATA) ./ipset/zapret-hosts-user-exclude.txt $(1)/opt/zapret/ipset/zapret-hosts-user-exclude.txt
-	$(INSTALL_DATA) ./ipset/zapret-ip-exclude.txt         $(1)/opt/zapret/ipset/zapret-ip-exclude.txt
-	$(INSTALL_DATA) ./ipset/cust1.txt         $(1)/opt/zapret/ipset/cust1.txt
 	$(INSTALL_DIR) $(1)/opt/zapret/ipset_def
 	$(INSTALL_DATA) ./ipset/zapret-hosts-google.txt       $(1)/opt/zapret/ipset_def/zapret-hosts-google.txt
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset_def/zapret-hosts-user.txt

@@ -378,39 +378,8 @@ jobs:
           TAG: ${{ needs.check.outputs.tag }}
           PKGVER: ${{ needs.build.outputs.pkgver }}
         run: |
-          TAG_NAME="v${PKGVER}${{ env.TAG_SUFFIX }}"
-          IS_PRERELEASE=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
-          CREATED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-          
           mkdir -p releases_json
-          
-          # Generate JSON for each architecture
-          for arch in aarch64_cortex-a53 mipsel_24kc; do
-            cat > "releases_json/releases_${arch}.json" << EOF
-{
-  "generated_at": "$CREATED_AT",
-  "releases": {
-    "0": {
-      "tag": "$TAG_NAME",
-      "prerelease": $([ "$IS_PRERELEASE" = "true" ] && echo "1" || echo "0"),
-      "assets": [
-        {
-          "name": "zapret_*_${arch}.ipk",
-          "browser_download_url": "https://github.com/${REPO_LNK}/releases/download/${TAG_NAME}/zapret_*_${arch}.ipk"
-        },
-        {
-          "name": "luci-app-zapret_*.ipk",
-          "browser_download_url": "https://github.com/${REPO_LNK}/releases/download/${TAG_NAME}/luci-app-zapret_*.ipk"
-        }
-      ]
-    }
-  }
-}
-EOF
-          done
-          
-          echo "Generated release JSON files"
-          ls -lah releases_json/
+          touch releases_json/.gitkeep
 
       - name: Deploy to gh-pages
         if: success() && env.FAKE_BUILD != 'true'
