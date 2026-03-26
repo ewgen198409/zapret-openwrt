@@ -102,6 +102,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_BIN) ./renew-cfg.sh       $(1)/opt/zapret/renew-cfg.sh
 	$(INSTALL_BIN) ./restore-def-cfg.sh $(1)/opt/zapret/restore-def-cfg.sh
 	$(INSTALL_BIN) ./sync_config.sh     $(1)/opt/zapret/sync_config.sh
+	$(INSTALL_BIN) ./update-pkg.sh      $(1)/opt/zapret/update-pkg.sh
 	# Fix permisions
 	chmod 644 $(1)/opt/zapret/ipset/*.txt
 	chmod 644 $(1)/opt/zapret/ipset_def/*.txt
