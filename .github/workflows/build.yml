@@ -43,6 +43,7 @@ env:
   BUILD_DATE: unknown
   REPO_DATE: unknown
   LUCI_ARCH: aarch64_cortex-a53
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   check:
@@ -122,11 +123,14 @@ jobs:
     outputs:
       pkgver: ${{ steps.build.outputs.pkgver }}
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Cache dependencies
+        uses: actions/cache@v5
         with:
-          repository: ${{ env.REPO_LNK }}
-          path: zapret-openwrt
+          path: ~/.cache
+          key: ${{ runner.os }}-cache
+
+      - name: Checkout repository
+        uses: actions/checkout@v6
 
       - name: Setup OpenWrt SDK
         working-directory: /builder
@@ -257,7 +261,7 @@ jobs:
 
       - name: Upload packages
         if: steps.build.outcome == 'success'
-        uses: actions/upload-artifact@main
+        uses: actions/upload-artifact@v6
         with:
           path: ${{ env.OUTDIR }}
           name: zapret,${{ env.PKGTYPE }},${{ matrix.arch }}
