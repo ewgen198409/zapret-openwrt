@@ -214,7 +214,12 @@ jobs:
         shell: bash
         run: |
           MAKE_JOBS=$(($(nproc)+1))
-          echo "$MAKE_JOBS thread compile"
+          echo "Build configuration:"
+          echo "  - Jobs: $MAKE_JOBS"
+          echo "  - Architecture: $ARCH"
+          echo "  - Branch: $BRANCH"
+          echo "  - Verbosity: V=sc"
+          echo ""
           
           if [ "$FAKE_BUILD" = "false" ]; then
               make defconfig
@@ -223,10 +228,12 @@ jobs:
               cat .config
               echo "------------- .config END -------------------"
               PKGLIST=`echo package/zapret-openwrt/{zapret,zapret-tpws,zapret-mdig,zapret-ip2net,luci-app-zapret}/compile`
+              echo "Package list: $PKGLIST"
+              echo "Starting build with detailed logging..."
               if [ "$MAX_SPEED" = "false" ]; then
-                  make $PKGLIST V=s CONFIG_CCACHE=1 BUILD_LOG=1
+                  make $PKGLIST V=sc CONFIG_CCACHE=1 BUILD_LOG=1
               else
-                  make -j$MAKE_JOBS $PKGLIST CONFIG_CCACHE=1
+                  make -j$MAKE_JOBS $PKGLIST V=sc CONFIG_CCACHE=1 BUILD_LOG=1
               fi
           else
               OUT_DIR=./bin/packages/dev_x/base
@@ -234,6 +241,15 @@ jobs:
               touch $OUT_DIR/zapret_$PKGVER-$ARCH.$PKGTYPE
               touch $OUT_DIR/luci-app-zapret_$PKGVER-all.$PKGTYPE
           fi
+          
+          echo ""
+          echo "============ BUILD COMPLETE ============"
+          echo "Checking build artifacts..."
+          ls -lah ./bin/packages/*/base/ 2>/dev/null | tail -20 || echo "No build artifacts found"
+          
+          echo ""
+          echo "Build logs location:"
+          ls -lah ./logs 2>/dev/null || echo "No detailed logs generated"
           
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
 
