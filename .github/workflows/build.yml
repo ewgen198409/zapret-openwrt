@@ -160,7 +160,7 @@ jobs:
           fi
 
       - name: Setup ccache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: '/builder/.ccache'
           key: ccache-${{ matrix.arch }}-${{ matrix.branch }}-${{ github.run_id }}
@@ -257,6 +257,7 @@ jobs:
           BRANCH: ${{ matrix.branch }}
           LOGS_DIR: '/builder/logs'
         run: |
+          mkdir -p /builder/logs
           tar -cJvf logs-$BRANCH-$ARCH.tar.xz $LOGS_DIR
 
       - name: Upload packages
