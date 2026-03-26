@@ -5,6 +5,7 @@
 'require ui';
 'require view';
 'require view.zapret.tools as tools';
+'require view.zapret.updater as updater';
 
 const btn_style_neutral  = 'btn';
 const btn_style_action   = 'btn cbi-button-action';
@@ -23,6 +24,7 @@ return view.extend({
             stop    : elems.btn_stop    || document.getElementById('btn_stop'),
             update  : elems.btn_update  || document.getElementById('btn_update'),
             reset   : elems.btn_update  || document.getElementById('btn_reset'),
+            updatezap  : elems.btn_updatezap  || document.getElementById('btn_updatezap'),
         };
     },
     
@@ -39,6 +41,7 @@ return view.extend({
         btn.stop.disabled    = flag;
         btn.update.disabled  = true; // TODO
         btn.reset.disabled   = (error_code == 0) ? flag : false;
+        btn.updatezap.disabled  = (error_code == 0) ? flag : false;
     },
 
     getAppStatus: function() {
@@ -101,6 +104,7 @@ return view.extend({
         let btn = this.get_svc_buttons(elems);
         btn.update.disabled = true;   // TODO
         btn.reset.disabled = false;
+        btn.updatezap.disabled = false;
 
         if (Number.isInteger(svcinfo)) {
             ui.addNotification(null, E('p', _('Error')
@@ -389,6 +393,10 @@ return view.extend({
         btn_reset.onclick   = L.bind(this.dialogResetCfg, this);
         layout_append(_('Reset settings to default'), null, [ btn_reset ] );
 
+        let btn_updatezap      = create_btn('btn_updatezap',  btn_style_action, _('Upgrade…'));
+        btn_updatezap.onclick  = ui.createHandlerFn(this, () => { updater.openUpdateDialog(this.pkg_arch) });
+        layout_append(_('Upgrading the package'), null, [ btn_updatezap ] );
+
         let elems = {
             "status": status_string,
             "btn_enable": btn_enable,
@@ -398,6 +406,7 @@ return view.extend({
             "btn_stop": btn_stop,
             "btn_update": btn_update,
             "btn_reset": btn_reset,
+            "btn_updatezap": btn_updatezap,
         };
         this.setAppStatus(status_array, elems);
 

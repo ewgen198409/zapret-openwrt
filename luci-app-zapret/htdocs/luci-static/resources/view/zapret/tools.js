@@ -452,7 +452,10 @@ return baseclass.extend({
 
         handleSave: function(ev) {
             let txt = document.getElementById('widget.modal_content');
-            let value = txt.value.trim().replace(/\r\n/g, '\n') + '\n';
+            let value = txt.value.trim().replace(/\r\n/g, '\n');
+            if (value.length > 0) {
+                value += '\n';
+            }
 
             return fs.write(this.file, value).then(async rc => {
                 txt.value = value;

@@ -287,7 +287,7 @@ function set_cfg_nfqws_strat
 	if [ "$strat" = "v7_by_Ewgeniy1984" ]; then
 		uci batch <<-EOF
 			set $cfgname.config.MODE_FILTER='hostlist'
-			set $cfgname.config.NFQWS_PORTS_TCP='80,443'
+			set $cfgname.config.NFQWS_PORTS_TCP='443'
 			set $cfgname.config.NFQWS_PORTS_UDP='443'
 			set $cfgname.config.NFQWS_OPT="
 				# Strategy $strat
@@ -323,13 +323,41 @@ function set_cfg_nfqws_strat
 			commit $cfgname
 		EOF
 	fi
+	if [ "$strat" = "v8_by_Ewgeniy1984" ]; then
+		uci batch <<-EOF
+			set $cfgname.config.MODE_FILTER='hostlist'
+			set $cfgname.config.NFQWS_PORTS_TCP='443'
+			set $cfgname.config.NFQWS_PORTS_UDP='443'
+			set $cfgname.config.NFQWS_OPT="
+				# Strategy $strat
+				
+				# ============== Youtube ==================================================
+				--filter-tcp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
+				--hostlist-exclude=/opt/zapret/ipset/zapret-hosts-user-exclude.txt
+				--dpi-desync=split2
+				--dpi-desync-split-seqovl=681
+				--dpi-desync-split-seqovl-pattern=/opt/zapret/files/fake/stun.bin
+				# =========================================================================
+				# ===============  Hostlist user ==========================================
+				--new
+				--filter-tcp=443
+				--hostlist-exclude=/opt/zapret/ipset/zapret-hosts-user-exclude.txt
+				--dpi-desync=split2
+				--dpi-desync-split-seqovl=681
+				--dpi-desync-split-seqovl-pattern=/opt/zapret/files/fake/stun.bin
+				# =========================================================================
+			"
+			commit $cfgname
+		EOF
+	fi
 	return 0
 }
 
 function set_cfg_default_values
 {
 	local opt_flags=${1:--}
-	local opt_strat=${2:-v7_by_Ewgeniy1984}
+	local opt_strat=${2:-v8_by_Ewgeniy1984}
 	local cfgname=${3:-$ZAPRET_CFG_NAME}
 
 	if ! echo "$opt_flags" | grep -q "(skip_base)"; then

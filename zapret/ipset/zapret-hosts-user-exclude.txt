@@ -13,6 +13,8 @@ voidboost.cc
 akamaihd.net
 amazonaws.com
 akamaized.net
+################## ip-tv
+cdntv.online
 #################################### VK
 vk.com
 mycdn.me
