@@ -132,6 +132,27 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v6
 
+      - name: Validate Makefile existence
+        run: |
+          if [ ! -f "$GITHUB_WORKSPACE/zapret-openwrt/luci-app-zapret/Makefile" ]; then
+            echo "Makefile not found: $GITHUB_WORKSPACE/zapret-openwrt/luci-app-zapret/Makefile"
+            exit 1
+          fi
+
+      - name: Validate package directory existence
+        run: |
+          if [ ! -d "$GITHUB_WORKSPACE/zapret-openwrt" ]; then
+            echo "Package directory not found: $GITHUB_WORKSPACE/zapret-openwrt"
+            exit 1
+          fi
+
+      - name: Validate feeds.conf.default existence
+        run: |
+          if [ ! -f feeds.conf.default ]; then
+            echo "feeds.conf.default not found"
+            exit 1
+          fi
+
       - name: Setup OpenWrt SDK
         working-directory: /builder
         env:
