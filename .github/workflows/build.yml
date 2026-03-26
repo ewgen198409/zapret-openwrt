@@ -376,22 +376,44 @@ jobs:
           PKGVER: ${{ needs.build.outputs.pkgver }}
         run: |
           TAG_NAME="v${PKGVER}${{ env.TAG_SUFFIX }}"
+          echo "Creating/updating release: $TAG_NAME"
+          
           # Create release if not exists
-          gh release create "$TAG_NAME" --repo ${REPO_LNK} --title "zapret v${PKGVER}" --notes "### zapret v${PKGVER} for OpenWrt 24.10
-          ### Supported architectures:
-          - mipsel_24kc
-          - aarch64_cortex-a53" --prerelease=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }} || true
-          # Get release ID
-          RELEASE_ID=$(gh release view "$TAG_NAME" --repo ${REPO_LNK} --json id -q .id)
-          # Upload files with paths using curl
+          if ! gh release view "$TAG_NAME" --repo ${REPO_LNK} >/dev/null 2>&1; then
+            echo "Creating new release..."
+            gh release create "$TAG_NAME" --repo ${REPO_LNK} \
+              --title "zapret v${PKGVER}" \
+              --notes "### zapret v${PKGVER} for OpenWrt 24.10
+
+              ### Supported architectures:
+              - mipsel_24kc (MIPS)
+              - aarch64_cortex-a53 (ARM64)
+              
+              ### Build info:
+              - Tag: ${TAG_NAME}
+              - Date: $(date)
+              " \
+              --prerelease=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
+          else
+            echo "Release $TAG_NAME already exists"
+          fi
+          
+          # Upload files using gh release upload
+          echo ""
+          echo "Uploading packages..."
           for file in release_files/*/*; do
-            arch=$(basename "$(dirname "$file")")
-            filename=$(basename "$file")
-            asset_name="${arch}/${filename}"
-            echo "Uploading $file as $asset_name"
-            curl -X POST \
-              -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
-              -H "Content-Type: application/octet-stream" \
-              --data-binary @"$file" \
-              "https://uploads.github.com/repos/${REPO_LNK}/releases/${RELEASE_ID}/assets?name=${asset_name}"
+            if [ -f "$file" ]; then
+              arch=$(basename "$(dirname "$file")")
+              filename=$(basename "$file")
+              asset_path="${arch}/${filename}"
+              echo "Uploading: $asset_path"
+              
+              # Try to upload with gh release upload
+              gh release upload "$TAG_NAME" "$file" --repo ${REPO_LNK} --clobber 2>&1 || {
+                echo "Warning: Failed to upload $file using gh, skipping"
+              }
+            fi
           done
+          
+          echo ""
+          echo "Release URL: https://github.com/${REPO_LNK}/releases/tag/${TAG_NAME}"
