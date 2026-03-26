@@ -183,6 +183,97 @@ return baseclass.extend({
         });
     },
 
+    getSystemArch: function() {
+        // Get system architecture from /etc/openwrt_release
+        return fs.read('/etc/openwrt_release').then(res => {
+            let arch = 'unknown';
+            if (res) {
+                let match = res.match(/DISTRIB_ARCH\s*=\s*"?([^"\n]+)"?/);
+                if (match && match[1]) {
+                    arch = match[1].trim();
+                }
+            }
+            return arch;
+        }).catch(e => {
+            return 'unknown';
+        });
+    },
+
+    checkUnsavedChanges: function() {
+        // Check if there are unsaved UCI changes
+        try {
+            let changes = uci.changes();
+            if (changes && Object.keys(changes).length > 0) {
+                return true;  // Has unsaved changes
+            }
+        } catch(e) {
+            // If uci.changes() fails, return false (assume no changes)
+        }
+        return false;  // No unsaved changes
+    },
+
+    execAndRead: function(opts) {
+        // Execute command and read output from log file
+        // opts: { cmd: [], log: 'path', logArea: element, callback: func, ctx: this, hiderow: regex }
+        let cmd = opts.cmd;
+        let log_file = opts.log;
+        let logArea = opts.logArea;
+        let callback = opts.callback || null;
+        let ctx = opts.ctx || this;
+        let hiderow = opts.hiderow || null;
+        
+        // Build shell command to redirect output to log file
+        let full_cmd = cmd.map(s => {
+            // Escape arguments that may contain spaces
+            return (s.includes(' ') || s.includes('"') || s.includes("'")) ? JSON.stringify(s) : s;
+        }).join(' ') + ' > ' + log_file + ' 2>&1';
+        
+        // Execute the command
+        return fs.exec('/bin/sh', [ '-c', full_cmd ]).then(res => {
+            // Read the log file
+            return fs.read(log_file).then(log_content => {
+                // Apply hiderow filter if provided
+                if (hiderow && log_content) {
+                    log_content = log_content.replace(hiderow, '');
+                }
+                
+                // Update logArea with content
+                if (logArea) {
+                    logArea.value = log_content;
+                    logArea.scrollTop = logArea.scrollHeight;
+                }
+                
+                // Call the callback with return code and content
+                if (callback && typeof callback === 'function') {
+                    return callback.call(ctx, res.code, log_content);
+                }
+                
+                return res.code;
+            }).catch(e => {
+                // If log file read fails, still pass the error to callback
+                let error_msg = 'ERROR: Failed to read log file: ' + e.message;
+                if (logArea) {
+                    logArea.value += error_msg + '\n';
+                }
+                if (callback && typeof callback === 'function') {
+                    return callback.call(ctx, 127, error_msg);
+                }
+                throw e;
+            });
+        }).catch(e => {
+            // Command execution failed
+            let error_msg = 'ERROR: Command execution failed: ' + e.message;
+            if (logArea) {
+                logArea.value = error_msg + '\n';
+                logArea.scrollTop = logArea.scrollHeight;
+            }
+            if (callback && typeof callback === 'function') {
+                return callback.call(ctx, 1, error_msg);
+            }
+            throw e;
+        });
+    },
+
     handleServiceAction: function(name, action) {
         return this.callInitAction(name, action).then(success => {
             if (!success) {

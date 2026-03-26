@@ -313,7 +313,9 @@ return view.extend({
         var _this = this;
         return Promise.all([
             L.resolveDefault(fs.stat('/bin/cat'), null),
+            tools.getSystemArch(),
         ]).then(function(data) {
+            _this.pkg_arch = data[1];  // Set system architecture
             return _this.getAppStatus();
         });
     },

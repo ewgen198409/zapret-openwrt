@@ -19,19 +19,8 @@ while getopts "cu:pft:" opt; do
 	esac
 done
 
-if [ "$EXE_DIR" = "/tmp" ]; then
-	ZAPRET_CFG_NAME="zapret"
-	if [ "$opt_update" = "1" ]; then
-		ZAPRET_CFG_NAME="zapret"
-		opt_update="@"
-		opt_forced="true"
-	fi
-	if [ "$opt_update" = "2" ]; then
-		ZAPRET_CFG_NAME="zapret2"
-		opt_update="@"
-		opt_forced="true"
-	fi
-else
+ZAPRET_CFG_NAME="zapret"
+if [ "$EXE_DIR" != "/tmp" ]; then
 	[ -f "$EXE_DIR/comfunc.sh" ] || { echo "ERROR: file $EXE_DIR/comfunc.sh not found!"; exit 1; }
 	. $EXE_DIR/comfunc.sh
 fi
@@ -52,13 +41,9 @@ if [ "$opt_test" != "" ]; then
 fi
 
 ZAP_CPU_ARCH="$DISTRIB_ARCH"
-
-if [ $ZAPRET_CFG_NAME = "zapret" ]; then
-	ZAP_REL_URL="https://raw.githubusercontent.com/ewgen198409/zapret-openwrt/gh-pages/releases/releases_zap1_$ZAP_CPU_ARCH.json"
-fi
-if [ $ZAPRET_CFG_NAME = "zapret2" ]; then
-	ZAP_REL_URL="https://raw.githubusercontent.com/remittor/zapret-openwrt/gh-pages/releases/releases_zap2_$ZAP_CPU_ARCH.json"
-fi
+REPO_OWNER="ewgen198409"
+REPO_NAME="zapret-openwrt"
+ZAP_REL_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/gh-pages/releases/releases_${ZAP_CPU_ARCH}.json"
 CURL_TIMEOUT=5
 CURL_HEADER1="Accept: application/json"
 CURL_HEADER2="Cache-Control: no-cache"
@@ -154,19 +139,7 @@ function curl_install
 	fi
 }
 
-function unzip_install
-{
-	if command -v unzip >/dev/null 2>&1; then
-		return 0
-	fi
-	pkg_mgr_update || { echo "ERROR: cannot update packages list"; return 1; }
-	echo ">>> Package unzip not found, installing..."
-	if [ "$PKG_MGR" = "opkg" ]; then
-		opkg install unzip
-	else
-		apk add unzip
-	fi
-}
+
 
 function get_pkg_version
 {
@@ -219,13 +192,7 @@ function normalize_version
 	rel=${rel:-1}
 	major=${1:-0}
 	minor=${2:-0}
-	if [ $ZAPRET_CFG_NAME = "zapret" ]; then
-		echo "$major.$minor.$rel"
-	fi
-	if [ $ZAPRET_CFG_NAME = "zapret2" ]; then
-		build=${3:-0}
-		echo "$major.$minor.$build.$rel"
-	fi
+	echo "$major.$minor.$rel"
 }
 
 function pkg_version_cmp
@@ -243,22 +210,9 @@ function pkg_version_cmp
 	x2=$( echo "$ver2" | cut -d. -f2 )
 	[ "$x1" -gt "$x2" ] && { echo -n "G"; return 0; }
 	[ "$x1" -lt "$x2" ] && { echo -n "L"; return 0; }
-	if [ $ZAPRET_CFG_NAME = "zapret2" ]; then
-		# build
-		x1=$( echo "$ver1" | cut -d. -f3 )
-		x2=$( echo "$ver2" | cut -d. -f3 )
-		[ "$x1" -gt "$x2" ] && { echo -n "G"; return 0; }
-		[ "$x1" -lt "$x2" ] && { echo -n "L"; return 0; }
-	fi
 	# release
-	if [ $ZAPRET_CFG_NAME = "zapret" ]; then
-		x1=$( echo "$ver1" | cut -d. -f3 )
-		x2=$( echo "$ver2" | cut -d. -f3 )
-	fi
-	if [ $ZAPRET_CFG_NAME = "zapret2" ]; then
-		x1=$( echo "$ver1" | cut -d. -f4 )
-		x2=$( echo "$ver2" | cut -d. -f4 )
-	fi
+	x1=$( echo "$ver1" | cut -d. -f3 )
+	x2=$( echo "$ver2" | cut -d. -f3 )
 	[ "$x1" -gt "$x2" ] && { echo -n "G"; return 0; }
 	[ "$x1" -lt "$x2" ] && { echo -n "L"; return 0; }
 	echo -n "E"
@@ -268,32 +222,57 @@ function download_releases_info
 {
 	local fname resp hdr txt txtlen txtlines generated_at
 	REL_JSON=
-	echo "Download releases info..."
-	fname="${ZAP_REL_URL##*/}"
-	resp=$( curl -s -D - --max-time $CURL_TIMEOUT -H "$CURL_HEADER1" -H "$CURL_HEADER2" "$ZAP_REL_URL" 2>/dev/null )
+	
+	echo "Download releases info from GitHub API..."
+	
+	# Use GitHub API directly
+	local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases"
+	
+	echo "Fetching releases from: $api_url"
+	resp=$( curl -s -D - --max-time $CURL_TIMEOUT -H "$CURL_HEADER1" -H "$CURL_HEADER2" "$api_url" 2>/dev/null )
 	hdr="${resp%%$'\r\n\r\n'*}"
 	status=$( printf '%s\n' "$hdr" | head -n 1 | awk '{print $2}' )
+	
 	if [ "$status" != 200 ]; then
-		echo "ERROR: Cannot download file \"$ZAP_REL_URL\" (status = $status)"
+		echo "ERROR: Cannot download file from GitHub API (status = $status)"
 		return 103
 	fi
-	txtlen=$( printf '%s\n' "$hdr" | awk -F': ' 'BEGIN{IGNORECASE=1} $1=="Content-Length"{print $2}' | tr -d '\r' )
-	echo "Content-Length: $txtlen bytes"
+	
 	txt="${resp#*$'\r\n\r\n'}"
 	txtlen=${#txt}
 	txtlines=$(printf '%s\n' "$txt" | wc -l)
+	
 	if [[ $txtlen -lt 64 ]]; then
 		echo "ERROR: Cannot download releases info! (size = $txtlen)"
 		return 104
 	fi
-	echo "Releases info downloaded! Size = $txtlen, Lines = $txtlines"
-	generated_at=$( printf '%s\n' "$txt" | grep -m1 -o '"generated_at"[[:space:]]*:[[:space:]]*".*"' | cut -d'"' -f4 )
-	if [[ "$generated_at" = "" ]]; then
-		echo "ERROR: Cannot download releases info! (incorrect generated_at)"
+	
+	# Convert GitHub API response to our JSON format
+	# Extract first release with its tag_name
+	local first_tag=$(echo "$txt" | grep -o '"tag_name":"[^"]*"' | head -1 | cut -d'"' -f4)
+	local first_prerel=$(echo "$txt" | grep -A 5 "\"tag_name\":\"$first_tag\"" | grep '"prerelease"' | cut -d':' -f2 | head -1)
+	local generated_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
+	
+	if [ -z "$first_tag" ]; then
+		echo "ERROR: Cannot download releases info! (no releases found)"
 		return 105
 	fi
-	echo "Releases info generated_at = $generated_at"
-	REL_JSON="$txt"
+	
+	# Build our expected JSON format
+	REL_JSON="{"
+	REL_JSON="${REL_JSON}\"generated_at\":\"${generated_at}\","
+	REL_JSON="${REL_JSON}\"releases\":{"
+	REL_JSON="${REL_JSON}\"0\":{"
+	REL_JSON="${REL_JSON}\"tag\":\"${first_tag}\","
+	REL_JSON="${REL_JSON}\"prerelease\":${first_prerel},"
+	REL_JSON="${REL_JSON}\"assets\":["
+	REL_JSON="${REL_JSON}{\"name\":\"zapret_*_${ZAP_CPU_ARCH}.ipk\",\"browser_download_url\":\"https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${first_tag}/zapret_*_${ZAP_CPU_ARCH}.ipk\"},"
+	REL_JSON="${REL_JSON}{\"name\":\"luci-app-zapret_*.ipk\",\"browser_download_url\":\"https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${first_tag}/luci-app-zapret_*.ipk\"}"
+	REL_JSON="${REL_JSON}]"
+	REL_JSON="${REL_JSON}}}}}"
+	
+	echo "Releases info downloaded! Size = $txtlen, Lines = $txtlines"
+	echo "First release: $first_tag (prerelease=$first_prerel)"
 	return 0
 }
 
@@ -475,46 +454,35 @@ if [ "$opt_update" != "" ]; then
 	fi
 	ZAP_PKG_DIR=/tmp/$ZAPRET_CFG_NAME-pkg
 	rm -rf $ZAP_PKG_DIR 2>/dev/null
-	ZAP_PKG_HDRS=$( curl -s -I -L --max-time $CURL_TIMEOUT -H "$CURL_HEADER2" "$ZAP_PKG_URL" )
-	ZAP_PKG_SIZE=$( echo "$ZAP_PKG_HDRS" | grep -i 'content-length: ' | tail -n1 | awk '{print $2}' | tr -d '\r' )
-	echo "Downloded ZIP-file size = $ZAP_PKG_SIZE bytes"
-	[ "$ZAP_PKG_SIZE" = "" ] || [[ $ZAP_PKG_SIZE -lt 256 ]] && {
-		echo "ERROR: incorrect package size!"
-		return 210
-	}
-	mkdir $ZAP_PKG_DIR
-	ZAP_PKG_FN="$ZAP_PKG_DIR/${ZAP_PKG_URL##*/}"
-	echo "Download ZIP-file..."
-	curl -s -L --retry 5 --retry-delay 1 --retry-max-time 55 --retry-all-errors --max-time 30 -H "$CURL_HEADER2" "$ZAP_PKG_URL" -o "$ZAP_PKG_FN"
+	mkdir -p $ZAP_PKG_DIR
+	
+	# Extract base download URL from release tag (remove v prefix)
+	ZAP_REL_TAG="${REL_ACTUAL_TAG#v}"
+	ZAP_DOWNLOAD_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${REL_ACTUAL_TAG}"
+	
+	echo "Downloading packages from release ${REL_ACTUAL_TAG}..."
+	
+	# Download zapret package
+	ZAP_PKG_FILE="${ZAPRET_CFG_NAME}_${ZAP_REL_TAG}_${ZAP_CPU_ARCH}.${ZAP_PKG_EXT}"
+	echo "Downloading $ZAP_PKG_FILE..."
+	curl -s -L --retry 3 --retry-delay 1 --max-time 60 -H "$CURL_HEADER2" \
+		"${ZAP_DOWNLOAD_URL}/${ZAP_PKG_FILE}" -o "$ZAP_PKG_DIR/$ZAP_PKG_FILE"
 	if [ $? -ne 0 ]; then
-		echo "ERROR: cannot download package!"
+		echo "ERROR: cannot download ${ZAP_PKG_FILE}!"
 		return 215
 	fi
-	ZAP_PKG_SZ=$( wc -c < "$ZAP_PKG_FN" )
-	if [ "$ZAP_PKG_SZ" != "$ZAP_PKG_SIZE" ]; then
-		echo "ERROR: downloaded package is incorrect! (size = $ZAP_PKG_SZ)"
+	
+	# Download luci-app-zapret package
+	LUCI_PKG_FILE=$(curl -s "$ZAP_DOWNLOAD_URL/" | grep -o "luci-app-${ZAPRET_CFG_NAME}_[^\"]*\.${ZAP_PKG_EXT}" | head -1)
+	if [ -z "$LUCI_PKG_FILE" ]; then
+		LUCI_PKG_FILE="luci-app-${ZAPRET_CFG_NAME}_${ZAP_REL_TAG}-r1_all.${ZAP_PKG_EXT}"
+	fi
+	echo "Downloading $LUCI_PKG_FILE..."
+	curl -s -L --retry 3 --retry-delay 1 --max-time 60 -H "$CURL_HEADER2" \
+		"${ZAP_DOWNLOAD_URL}/${LUCI_PKG_FILE}" -o "$ZAP_PKG_DIR/$LUCI_PKG_FILE"
+	if [ $? -ne 0 ]; then
+		echo "ERROR: cannot download ${LUCI_PKG_FILE}!"
 		return 216
-	fi
-	if ! command -v unzip >/dev/null 2>&1; then
-		if [ "$opt_forced" = true ]; then
-			unzip_install
-		fi
-	fi
-	if ! command -v unzip >/dev/null 2>&1; then
-		echo "ERROR: package \"unzip\" not installed!"
-		return 218
-	fi
-	unzip -q "$ZAP_PKG_FN" -d $ZAP_PKG_DIR
-	rm -f "$ZAP_PKG_FN" 2>/dev/null
-	if [ "$PKG_MGR" = "apk" ]; then
-		if [ ! -d "$ZAP_PKG_DIR/apk" ]; then
-			echo "ERROR: APK-files not found"
-			return 221
-		fi
-		rm -f $ZAP_PKG_DIR/*.ipk 2>/dev/null
-		mv $ZAP_PKG_DIR/apk/* $ZAP_PKG_DIR/
-	else
-		rm -rf $ZAP_PKG_DIR/apk 2>/dev/null
 	fi
 	ZAP_PKG_LIST=$( ls -1 "$ZAP_PKG_DIR" )
 	echo "------ Downloaded packages:"
@@ -566,5 +534,5 @@ if [ "$opt_update" != "" ]; then
 		echo "ERROR: Failed to install package $ZAP_PKG_LUCI_FN"
 		return 247
 	fi
-	echo "RESULT: (+) Packages from $ZAP_PKG_ZIP_NAME successfully installed!"
+	echo "RESULT: (+) Packages successfully installed!"
 fi

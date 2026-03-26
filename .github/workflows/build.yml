@@ -214,26 +214,15 @@ jobs:
         shell: bash
         run: |
           MAKE_JOBS=$(($(nproc)+1))
-          echo "Build configuration:"
-          echo "  - Jobs: $MAKE_JOBS"
-          echo "  - Architecture: $ARCH"
-          echo "  - Branch: $BRANCH"
-          echo "  - Verbosity: V=sc"
-          echo ""
           
           if [ "$FAKE_BUILD" = "false" ]; then
               make defconfig
               sed -i 's/CONFIG_LUCI_JSMIN=y/CONFIG_LUCI_JSMIN=n/g' .config
-              echo "------------- .config BEG -------------------"
-              cat .config
-              echo "------------- .config END -------------------"
               PKGLIST=`echo package/zapret-openwrt/{zapret,zapret-tpws,zapret-mdig,zapret-ip2net,luci-app-zapret}/compile`
-              echo "Package list: $PKGLIST"
-              echo "Starting build with detailed logging..."
               if [ "$MAX_SPEED" = "false" ]; then
-                  make $PKGLIST V=sc CONFIG_CCACHE=1 BUILD_LOG=1
+                  make $PKGLIST V=s CONFIG_CCACHE=1 BUILD_LOG=1
               else
-                  make -j$MAKE_JOBS $PKGLIST V=sc CONFIG_CCACHE=1 BUILD_LOG=1
+                  make -j$MAKE_JOBS $PKGLIST CONFIG_CCACHE=1
               fi
           else
               OUT_DIR=./bin/packages/dev_x/base
@@ -242,22 +231,11 @@ jobs:
               touch $OUT_DIR/luci-app-zapret_$PKGVER-all.$PKGTYPE
           fi
           
-          echo ""
-          echo "============ BUILD COMPLETE ============"
-          echo "Checking build artifacts..."
-          ls -lah ./bin/packages/*/base/ 2>/dev/null | tail -20 || echo "No build artifacts found"
-          
-          echo ""
-          echo "Build logs location:"
-          ls -lah ./logs 2>/dev/null || echo "No detailed logs generated"
-          
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
 
-          echo ">>>>>>> build a repository index to make the output directory usable as local OPKG source"
           PKG_DIR=./bin/packages/*/base
           (
             cd $PKG_DIR || exit 1
-            echo "Trying manual generation of Packages"
             > Packages
             for pkg in *.ipk; do
               if [ -f "$pkg" ]; then
@@ -329,9 +307,6 @@ jobs:
           BUILD_DATE: ${{ needs.check.outputs.build_date }}
           PKGVER: ${{ needs.build.outputs.pkgver }}
         run: |
-          echo "------------- DIR BEG -------------------"
-          ls -la
-          echo "------------- DIR END -------------------"
           rm -rf sorted release_files
           mkdir -p sorted
           find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)' \;
@@ -366,7 +341,6 @@ jobs:
               fi
             done
           done
-          ls -la release_files/
 
       - name: Create and upload release
         env:
@@ -376,44 +350,73 @@ jobs:
           PKGVER: ${{ needs.build.outputs.pkgver }}
         run: |
           TAG_NAME="v${PKGVER}${{ env.TAG_SUFFIX }}"
-          echo "Creating/updating release: $TAG_NAME"
           
           # Create release if not exists
           if ! gh release view "$TAG_NAME" --repo ${REPO_LNK} >/dev/null 2>&1; then
-            echo "Creating new release..."
             gh release create "$TAG_NAME" --repo ${REPO_LNK} \
               --title "zapret v${PKGVER}" \
-              --notes "### zapret v${PKGVER} for OpenWrt 24.10
+              --notes "zapret v${PKGVER} for OpenWrt 24.10
 
               ### Supported architectures:
               - mipsel_24kc (MIPS)
               - aarch64_cortex-a53 (ARM64)
-              
-              ### Build info:
-              - Tag: ${TAG_NAME}
-              - Date: $(date)
               " \
               --prerelease=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
-          else
-            echo "Release $TAG_NAME already exists"
           fi
           
           # Upload files using gh release upload
-          echo ""
-          echo "Uploading packages..."
           for file in release_files/*/*; do
             if [ -f "$file" ]; then
-              arch=$(basename "$(dirname "$file")")
-              filename=$(basename "$file")
-              asset_path="${arch}/${filename}"
-              echo "Uploading: $asset_path"
-              
-              # Try to upload with gh release upload
-              gh release upload "$TAG_NAME" "$file" --repo ${REPO_LNK} --clobber 2>&1 || {
-                echo "Warning: Failed to upload $file using gh, skipping"
-              }
+              gh release upload "$TAG_NAME" "$file" --repo ${REPO_LNK} --clobber
             fi
           done
+
+      - name: Generate release JSON for gh-pages
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO_LNK: ewgen198409/zapret-openwrt
+          TAG: ${{ needs.check.outputs.tag }}
+          PKGVER: ${{ needs.build.outputs.pkgver }}
+        run: |
+          TAG_NAME="v${PKGVER}${{ env.TAG_SUFFIX }}"
+          IS_PRERELEASE=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
+          CREATED_AT=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
           
-          echo ""
-          echo "Release URL: https://github.com/${REPO_LNK}/releases/tag/${TAG_NAME}"
+          mkdir -p releases_json
+          
+          # Generate JSON for each architecture
+          for arch in aarch64_cortex-a53 mipsel_24kc; do
+            cat > "releases_json/releases_${arch}.json" << EOF
+{
+  "generated_at": "$CREATED_AT",
+  "releases": {
+    "0": {
+      "tag": "$TAG_NAME",
+      "prerelease": $([ "$IS_PRERELEASE" = "true" ] && echo "1" || echo "0"),
+      "assets": [
+        {
+          "name": "zapret_*_${arch}.ipk",
+          "browser_download_url": "https://github.com/${REPO_LNK}/releases/download/${TAG_NAME}/zapret_*_${arch}.ipk"
+        },
+        {
+          "name": "luci-app-zapret_*.ipk",
+          "browser_download_url": "https://github.com/${REPO_LNK}/releases/download/${TAG_NAME}/luci-app-zapret_*.ipk"
+        }
+      ]
+    }
+  }
+}
+EOF
+          done
+          
+          echo "Generated release JSON files"
+          ls -lah releases_json/
+
+      - name: Deploy to gh-pages
+        if: success() && env.FAKE_BUILD != 'true'
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./releases_json
+          destination_dir: releases
+          keep_files: true
