@@ -102,12 +102,21 @@ return baseclass.extend({
                 }
                 let pkg_url = txt.match(/^ZAP_PKG_URL\s*=\s*(.+)$/m);
                 if (code && pkg_url) {
-                    if (!this.forced_reinstall) {
-                        if (code[1] == 'E' || code[1] == 'G') {
-                            this.setStage(0);  // install not needed
-                            return;
-                        }
+                    // Check if versions are same (E or G codes)
+                    let isSameVersion = (code[1] == 'E' || code[1] == 'G');
+                    
+                    if (isSameVersion && !this.forced_reinstall) {
+                        // Same version and forced reinstall is OFF -> disable install
+                        this.appendLog(_('Latest version already installed. Use "Forced reinstall" to reinstall.'));
+                        this.setStage(0);  // install not needed
+                        return;
                     }
+                    
+                    // If same version but forced reinstall is ON -> allow reinstall
+                    if (isSameVersion && this.forced_reinstall) {
+                        this.appendLog(_('Forced reinstall enabled - will reinstall current version.'));
+                    }
+                    
                     this.pkg_url = pkg_url[1];
                     this.setStage(2);  // enable all buttons
                     return;  // install allowed
@@ -213,5 +222,29 @@ return baseclass.extend({
                 ]),
             ]),
         ]);
+        
+        // Attach event listener to forced reinstall checkbox
+        // This allows dynamic button activation when toggling forced reinstall
+        setTimeout(() => {
+            let checkboxForcedReinstall = document.getElementById('cfg_forced_reinstall');
+            if (checkboxForcedReinstall) {
+                checkboxForcedReinstall.addEventListener('change', (ev) => {
+                    this.forced_reinstall = checkboxForcedReinstall.checked;
+                    
+                    // If we have a package URL and forced reinstall is now enabled,
+                    // activate the install button even if versions are the same
+                    if (this.pkg_url && this.stage == 0 && this.forced_reinstall) {
+                        this.appendLog(_('Forced reinstall enabled - install button is now active.'));
+                        this.setStage(2);
+                    }
+                    // If forced reinstall is disabled and versions are the same,
+                    // disable the install button
+                    else if (this.pkg_url && this.forced_reinstall == false && this.stage == 0) {
+                        this.appendLog(_('Forced reinstall disabled - install button deactivated.'));
+                        this.setStage(0);
+                    }
+                });
+            }
+        }, 100);
     },
 });

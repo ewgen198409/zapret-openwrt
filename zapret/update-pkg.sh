@@ -46,12 +46,13 @@ REPO_NAME="zapret-openwrt"
 ZAP_REL_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/gh-pages/releases/releases_${ZAP_CPU_ARCH}.json"
 CURL_TIMEOUT=5
 CURL_HEADER1="Accept: application/json"
-CURL_HEADER2="Cache-Control: no-cache"
+CURL_HEADER2="User-Agent: Mozilla/5.0 (compatible; zapret-updater)"
 
 REL_JSON=
 REL_ACTUAL_TAG=
 REL_ACTUAL_PRE=
 REL_ACTUAL_URL=
+REL_ACTUAL_LUCI_URL=
 
 ZAP_OUT=
 ZAP_ERR=
@@ -109,7 +110,7 @@ function pkg_mgr_update
 	if [ "$PKG_MGR" = "opkg" ]; then
 		PKG_TOTAL=$( opkg list | wc -l )
 		PKG_INSTALLED=$( opkg list-installed | wc -l )
-		if [ "$PKG_TOTAL" -le "$PKG_INSTALLED" ] || [[ "$PKG_TOTAL" -le $((PKG_INSTALLED + 100)) ]]; then
+		if [ "$PKG_TOTAL" -le "$PKG_INSTALLED" ] || [ "$PKG_TOTAL" -le $((PKG_INSTALLED + 100)) ]; then
 			echo ">>> OPKG update..."
 			opkg update
 			return $?
@@ -242,21 +243,33 @@ function download_releases_info
 	txtlen=${#txt}
 	txtlines=$(printf '%s\n' "$txt" | wc -l)
 	
-	if [[ $txtlen -lt 64 ]]; then
+	if [ $txtlen -lt 64 ]; then
 		echo "ERROR: Cannot download releases info! (size = $txtlen)"
 		return 104
 	fi
 	
 	# Convert GitHub API response to our JSON format
-	# Extract first release with its tag_name
-	local first_tag=$(echo "$txt" | grep -o '"tag_name":"[^"]*"' | head -1 | cut -d'"' -f4)
-	local first_prerel=$(echo "$txt" | grep -A 5 "\"tag_name\":\"$first_tag\"" | grep '"prerelease"' | cut -d':' -f2 | head -1)
+	# Extract first release with its tag_name (handle both with and without spaces around colon)
+	local first_tag=$(echo "$txt" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
+	local first_prerel=$(echo "$txt" | grep -A 5 "\"tag_name\"" | grep '"prerelease"' | grep -o 'false\|true' | head -1)
 	local generated_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
 	
 	if [ -z "$first_tag" ]; then
 		echo "ERROR: Cannot download releases info! (no releases found)"
 		return 105
 	fi
+	
+	# Extract real download URLs from API response for this architecture
+	# Look for zapret package matching our architecture
+	local zapret_asset=$(echo "$txt" | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*zapret_[^"]*_'"${ZAP_CPU_ARCH}"'\.ipk[^"]*"' | head -1 | cut -d'"' -f4)
+	
+	# If not found with arch-specific pattern, try generic pattern (some releases may have different naming)
+	if [ -z "$zapret_asset" ]; then
+		zapret_asset=$(echo "$txt" | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*zapret[^"]*\.ipk[^"]*"' | head -1 | cut -d'"' -f4)
+	fi
+	
+	# Look for luci-app-zapret package (architecture independent, marked as 'all')
+	local luci_asset=$(echo "$txt" | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*luci-app-zapret[^"]*\.ipk[^"]*"' | head -1 | cut -d'"' -f4)
 	
 	# Build our expected JSON format
 	REL_JSON="{"
@@ -266,13 +279,30 @@ function download_releases_info
 	REL_JSON="${REL_JSON}\"tag\":\"${first_tag}\","
 	REL_JSON="${REL_JSON}\"prerelease\":${first_prerel},"
 	REL_JSON="${REL_JSON}\"assets\":["
-	REL_JSON="${REL_JSON}{\"name\":\"zapret_*_${ZAP_CPU_ARCH}.ipk\",\"browser_download_url\":\"https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${first_tag}/zapret_*_${ZAP_CPU_ARCH}.ipk\"},"
-	REL_JSON="${REL_JSON}{\"name\":\"luci-app-zapret_*.ipk\",\"browser_download_url\":\"https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${first_tag}/luci-app-zapret_*.ipk\"}"
+	
+	if [ -n "$zapret_asset" ]; then
+		REL_JSON="${REL_JSON}{\"name\":\"zapret_${first_tag}_${ZAP_CPU_ARCH}.ipk\",\"browser_download_url\":\"${zapret_asset}\"},"
+	fi
+	
+	if [ -n "$luci_asset" ]; then
+		REL_JSON="${REL_JSON}{\"name\":\"luci-app-zapret_${first_tag}_all.ipk\",\"browser_download_url\":\"${luci_asset}\"}"
+	fi
+	
 	REL_JSON="${REL_JSON}]"
 	REL_JSON="${REL_JSON}}}}}"
 	
 	echo "Releases info downloaded! Size = $txtlen, Lines = $txtlines"
 	echo "First release: $first_tag (prerelease=$first_prerel)"
+	if [ -n "$zapret_asset" ]; then
+		echo "Found zapret for $ZAP_CPU_ARCH: ${zapret_asset##*/}"
+	fi
+	if [ -n "$luci_asset" ]; then
+		echo "Found luci-app-zapret: ${luci_asset##*/}"
+	fi
+	# Debug: show JSON structure
+	echo "DEBUG: REL_JSON structure:" >&2
+	echo "$REL_JSON" | head -c 200 >&2
+	echo "" >&2
 	return 0
 }
 
@@ -311,21 +341,43 @@ function get_actual_release
 			json_cleanup
 			return 160
 		fi
-		json_select 0 > /dev/null
-		if [ $? -ne 0 ]; then
-			json_select 1 > /dev/null
+		
+		# Get all assets (zapret and luci-app-zapret)
+		local asset_idx=0
+		REL_ACTUAL_URL=
+		REL_ACTUAL_LUCI_URL=
+		while true; do
+			json_select "$asset_idx" > /dev/null 2>&1
 			if [ $? -ne 0 ]; then
-				echo "ERROR: release[$rel_id] include incorrect 'assets'"
-				json_cleanup
-				return 162
+				break  # No more assets
 			fi
-		fi
-		json_get_var url browser_download_url
-		json_select .. .. ..  # assets-elem -> assets -> releases[rel_id] -> releases
+			
+			local asset_url asset_name
+			json_get_var asset_name name
+			json_get_var asset_url browser_download_url
+			
+			# Check what type of asset this is
+			case "$asset_name" in
+				*"luci-app"*)
+					REL_ACTUAL_LUCI_URL="$asset_url"
+					;;
+				*)
+					if [ -z "$REL_ACTUAL_URL" ]; then
+						REL_ACTUAL_URL="$asset_url"
+					fi
+					;;
+			esac
+			
+			json_select ..  # back to assets
+			asset_idx=$((asset_idx + 1))
+		done
+		
+		json_select .. ..  # assets -> releases[rel_id] -> releases
 		json_cleanup
 		REL_ACTUAL_TAG="$tag"
 		REL_ACTUAL_PRE="$pre"
-		REL_ACTUAL_URL="$url"
+		# Debug output
+		echo "DEBUG: REL_ACTUAL_TAG='$REL_ACTUAL_TAG' REL_ACTUAL_URL='$REL_ACTUAL_URL' REL_ACTUAL_LUCI_URL='$REL_ACTUAL_LUCI_URL'" >&2
 		return 0
 	done
 	json_cleanup
@@ -388,6 +440,27 @@ if [ "$opt_check" = "true" ]; then
 	fi
 	echo "Latest package version: $REL_ACTUAL_TAG"
 	echo "Latest package url: $REL_ACTUAL_URL"
+elif [ "$opt_update" = "@" ]; then
+	# When updating to latest (@), we need to get release info from GitHub API
+	download_releases_info
+	ZAP_ERR=$?
+	if [ $ZAP_ERR -ne 0 ]; then
+		echo "ERROR: Func download_releases_info return error code: $ZAP_ERR"
+		return $ZAP_ERR
+	fi
+	get_actual_release
+	ZAP_ERR=$?
+	if [ $ZAP_ERR = 150 ] && [ "$opt_prerelease" != true ] && [ "$opt_forced" = true ]; then
+		opt_prerelease="true"
+		get_actual_release
+		ZAP_ERR=$?
+	fi
+	if [ $ZAP_ERR -ne 0 ]; then
+		echo "ERROR: Func get_actual_release return error code: $ZAP_ERR"
+		return $ZAP_ERR
+	fi
+	echo "Latest package version: $REL_ACTUAL_TAG"
+	echo "Latest package url: $REL_ACTUAL_URL"
 fi
 
 ZAP_PKG_SIZE=
@@ -418,8 +491,19 @@ else
 fi
 
 ZAP_PKG_ZIP_NAME=${ZAP_PKG_URL##*/}
+# Extract version from filename: handles both "zapret_v72.x_arch" and "zapret_72.x_arch" formats
+# First try with "v" prefix: zapret_v72.20260312_mipsel_24kc.ipk -> 72.20260312
 ZAP_PKG_ZIP_VER=${ZAP_PKG_ZIP_NAME#*_v}
-ZAP_PKG_ZIP_VER=${ZAP_PKG_ZIP_VER%%_*}
+# If no "v" found (version string is same as original), try without "v" prefix
+if [ "$ZAP_PKG_ZIP_VER" = "$ZAP_PKG_ZIP_NAME" ]; then
+	# Format: zapret_72.20260312_mipsel_24kc.ipk -> 72.20260312
+	ZAP_PKG_ZIP_VER=${ZAP_PKG_ZIP_NAME#*_}     # Remove everything up to and including first "_"
+	ZAP_PKG_ZIP_VER=${ZAP_PKG_ZIP_VER%%_*}     # Keep only the version part before next "_"
+	ZAP_PKG_ZIP_VER=${ZAP_PKG_ZIP_VER%%-*}     # Handle dash separator too (e.g. "72.20260312-r1")
+else
+	# Version was found with "v" prefix, extract it
+	ZAP_PKG_ZIP_VER=${ZAP_PKG_ZIP_VER%%_*}
+fi
 
 if [ "$opt_update" != "" ]; then
 	if [ "$opt_update" = "@" ]; then
@@ -456,30 +540,35 @@ if [ "$opt_update" != "" ]; then
 	rm -rf $ZAP_PKG_DIR 2>/dev/null
 	mkdir -p $ZAP_PKG_DIR
 	
-	# Extract base download URL from release tag (remove v prefix)
-	ZAP_REL_TAG="${REL_ACTUAL_TAG#v}"
-	ZAP_DOWNLOAD_URL="https://github.com/${REPO_OWNER}/${REPO_NAME}/releases/download/${REL_ACTUAL_TAG}"
-	
-	echo "Downloading packages from release ${REL_ACTUAL_TAG}..."
-	
-	# Download zapret package
-	ZAP_PKG_FILE="${ZAPRET_CFG_NAME}_${ZAP_REL_TAG}_${ZAP_CPU_ARCH}.${ZAP_PKG_EXT}"
-	echo "Downloading $ZAP_PKG_FILE..."
+	# Use ZAP_PKG_URL directly (already contains correct download URL from GitHub)
+	ZAP_PKG_FILE="${ZAPRET_CFG_NAME}_${ZAP_PKG_ZIP_VER}_${ZAP_CPU_ARCH}.${ZAP_PKG_EXT}"
+	echo "Downloading $ZAP_PKG_FILE from $ZAP_PKG_URL..."
 	curl -s -L --retry 3 --retry-delay 1 --max-time 60 -H "$CURL_HEADER2" \
-		"${ZAP_DOWNLOAD_URL}/${ZAP_PKG_FILE}" -o "$ZAP_PKG_DIR/$ZAP_PKG_FILE"
+		"${ZAP_PKG_URL}" -o "$ZAP_PKG_DIR/$ZAP_PKG_FILE"
 	if [ $? -ne 0 ]; then
 		echo "ERROR: cannot download ${ZAP_PKG_FILE}!"
 		return 215
 	fi
 	
-	# Download luci-app-zapret package
-	LUCI_PKG_FILE=$(curl -s "$ZAP_DOWNLOAD_URL/" | grep -o "luci-app-${ZAPRET_CFG_NAME}_[^\"]*\.${ZAP_PKG_EXT}" | head -1)
-	if [ -z "$LUCI_PKG_FILE" ]; then
-		LUCI_PKG_FILE="luci-app-${ZAPRET_CFG_NAME}_${ZAP_REL_TAG}-r1_all.${ZAP_PKG_EXT}"
+	# For luci-app-zapret: if we got it from GitHub API, we have the direct URL
+	# Otherwise find it from release page
+	if [ -n "$REL_ACTUAL_LUCI_URL" ]; then
+		# We got luci-app-zapret URL from API
+		LUCI_PKG_URL="$REL_ACTUAL_LUCI_URL"
+	else
+		# Extract directory from ZAP_PKG_URL and try to find luci package
+		local release_dir="${ZAP_PKG_URL%/*}"
+		LUCI_PKG_URL=$(curl -s "$release_dir/" 2>/dev/null | grep -o "href=\"[^\"]*luci-app-${ZAPRET_CFG_NAME}[^\"]*\.${ZAP_PKG_EXT}[^\"]*\"" | head -1 | cut -d'"' -f2 | awk '{print $1}')
+		if [ -z "$LUCI_PKG_URL" ]; then
+			# Fallback: try common naming pattern
+			LUCI_PKG_URL="${release_dir}/luci-app-${ZAPRET_CFG_NAME}_${ZAP_PKG_ZIP_VER}-r1_all.${ZAP_PKG_EXT}"
+		fi
 	fi
-	echo "Downloading $LUCI_PKG_FILE..."
+	
+	LUCI_PKG_FILE="luci-app-${ZAPRET_CFG_NAME}_${ZAP_PKG_ZIP_VER}-r1_all.${ZAP_PKG_EXT}"
+	echo "Downloading $LUCI_PKG_FILE from $LUCI_PKG_URL..."
 	curl -s -L --retry 3 --retry-delay 1 --max-time 60 -H "$CURL_HEADER2" \
-		"${ZAP_DOWNLOAD_URL}/${LUCI_PKG_FILE}" -o "$ZAP_PKG_DIR/$LUCI_PKG_FILE"
+		"${LUCI_PKG_URL}" -o "$ZAP_PKG_DIR/$LUCI_PKG_FILE"
 	if [ $? -ne 0 ]; then
 		echo "ERROR: cannot download ${LUCI_PKG_FILE}!"
 		return 216
