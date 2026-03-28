@@ -4,26 +4,6 @@
 [![Downloads](https://img.shields.io/github/downloads/ewgen198409/zapret-openwrt/total.svg)](https://github.com/ewgen198409/zapret-openwrt/releases)
 [![License](https://img.shields.io/github/license/ewgen198409/zapret-openwrt)](LICENSE)
 
-## Стратегия 15.02.2026
-
-!!! Два разп чтобы не накапливался в автолисте rr00--......  от ютуб видео
-
-!!! Поставить галочку Autohostlist
-
---filter-tcp=443 <HOSTLIST>
---hostlist-exclude=/opt/zapret/ipset/zapret-hosts-user-exclude.txt
---dpi-desync=split2
---dpi-desync-split-seqovl=681
---dpi-desync-split-seqovl-pattern=/opt/zapret/files/fake/stun.bin
-
---filter-tcp=443
---hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
---hostlist-exclude=/opt/zapret/ipset/zapret-hosts-user-exclude.txt
---dpi-desync=split2
---dpi-desync-split-seqovl=681
---dpi-desync-split-seqovl-pattern=/opt/zapret/files/fake/stun.bin
-
-
 ## Описание
 
 **Zapret** — это не VPN! Это утилита **Anti-DPI** (Deep Packet Inspection).
