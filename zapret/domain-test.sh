@@ -1,31 +1,40 @@
 #!/bin/sh
-# domain-test.sh - проверка доступности доменов с текущими настройками zapret
-INPUT_FILE="$1"
-OUTPUT_FILE="$2"
+# domain-test.sh - проверка доступности доменов
+# Использование: 
+#   domain-test.sh domain           - выводит результат в формате: статус|домен|время
+#   domain-test.sh input_file output_file - проверить все домены из input_file, результат в output_file
 
-# Параметры curl (аналогично Zapret-Manager.sh)
 CURL_TIMEOUT="--connect-timeout 4 --max-time 6 --speed-time 3 --speed-limit 1"
-CURL_OPT="-sL --range 0-65535 -A 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) curl/8.0'"
+CURL_AGENT="Mozilla/5.0 (Windows NT 10.0; Win64; x64) curl/8.0"
 
-# Проверка одного URL (домен -> https://домен)
-check_url() {
+check_domain() {
     local domain="$1"
-    local url="https://$domain"
-    if curl $CURL_TIMEOUT $CURL_OPT -o /dev/null "$url" >/dev/null 2>&1; then
-        echo "[ OK ] $domain"
-        return 0
+    output=$(curl $CURL_TIMEOUT -sL -o /dev/null -w "%{http_code}|%{time_total}" -A "$CURL_AGENT" "https://$domain" 2>/dev/null)
+    http_code=$(echo "$output" | cut -d'|' -f1)
+    time_total=$(echo "$output" | cut -d'|' -f2)
+    if [ "$http_code" != "000" ] && [ -n "$http_code" ]; then
+        echo "OK|$domain|$time_total"
     else
-        echo "[FAIL] $domain"
-        return 1
+        echo "FAIL|$domain|-"
     fi
 }
 
-# Основная функция
-result=""
-while IFS= read -r domain; do
-    [ -z "$domain" ] && continue
-    result="$result$(check_url "$domain")\n"
-done < "$INPUT_FILE"
+if [ $# -eq 1 ]; then
+    check_domain "$1"
+    exit 0
+fi
 
-# Выводим результат в файл
-echo -e "$result" > "$OUTPUT_FILE"
+if [ $# -eq 2 ]; then
+    INPUT_FILE="$1"
+    OUTPUT_FILE="$2"
+    result=""
+    while IFS= read -r domain; do
+        [ -z "$domain" ] && continue
+        result="$result$(check_domain "$domain")\n"
+    done < "$INPUT_FILE"
+    echo -e "$result" > "$OUTPUT_FILE"
+    exit 0
+fi
+
+echo "Usage: domain-test.sh domain | domain-test.sh input_file output_file"
+exit 1
