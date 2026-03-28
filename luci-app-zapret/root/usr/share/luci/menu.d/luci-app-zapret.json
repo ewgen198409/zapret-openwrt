@@ -63,7 +63,7 @@
 		"depends": {
 			"acl": [ "luci-app-zapret" ],
 			"fs": {
-				"/usr/libexec/luci/zapret/domain-test.sh": "executable"
+				"/opt/zapret/domain-test.sh": "executable"
 			}
 		}
 	}
