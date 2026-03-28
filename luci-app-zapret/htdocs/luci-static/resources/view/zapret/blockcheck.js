@@ -1,6 +1,7 @@
 'use strict';
 'require view';
 'require ui';
+'require view.zapret.tools';
 
 return view.extend({
     showCreateCommand: function() {
@@ -247,10 +248,6 @@ return view.extend({
     },
 
     render: function() {
-        var h2 = E('div', {'class' : 'cbi-title-section'}, [
-            E('h2', {'class': 'cbi-title-field'}, [ _('Zapret') + ' - ' + _('Blockcheck') ]),
-        ]);
-
         var helpButton = E('button', {
             'class': 'cbi-button cbi-button-neutral',
             'click': ui.createHandlerFn(this, this.showHelp),
@@ -263,31 +260,21 @@ return view.extend({
 
         var terminalIframe = E('iframe', {
             'src': 'http://' + window.location.hostname + ':7681/?arg=/bin/bash',
-            'style': 'width:90vw; height:80vh; margin: 0 auto; display: block; border:1px solid #ccc; resize: both; overflow: hidden; opacity: 0.9; scrollbar-width: thin; scrollbar-color: #888 #f1f1f1;',
+            'style': 'width:100%; height:70vh; border:1px solid #ccc; resize: both;',
             'sandbox': 'allow-scripts allow-same-origin',
         });
 
-        var helpButtonTerminal = E('button', {
-            'class': 'cbi-button cbi-button-neutral',
-            'style': 'position: absolute; top: 30px; left: calc(5vw + 0px); z-index: 1000;',
-            'click': ui.createHandlerFn(this, this.showHelp),
-        }, _('Help'));
-
-        var createCommandButtonTerminal = E('button', {
-            'class': 'cbi-button cbi-button-neutral',
-            'style': 'position: absolute; top: 30px; left: calc(5vw + 70px); z-index: 1000;',
-            'click': ui.createHandlerFn(this, this.showCreateCommand),
-        }, _('Create command'));
-
-        return E('div', { 'class': 'zapret-app', 'style': 'width:100vw; height:100vh; position: relative; margin-left: calc(-50vw + 50%); overflow-x: hidden; background-image: url(/luci-static/resources/view/zapret/wallpaper.jpg); background-size: cover; background-position: center; background-attachment: fixed;' }, [
-            E('div', {'style': 'text-align: center;'}, h2),
-            E('div', {'class': 'cbi-section-descr', 'style': 'text-align: center;'}, _('Terminal window for running blockcheck.sh to test DPI bypass strategies.')),
-            E('div', {'style': 'margin-left: 5vw; margin-bottom: 0px; padding-left: 10px;'}, [
-                helpButtonTerminal,
-                E('span', {}, ' '),
-                createCommandButtonTerminal
-            ]),
-            terminalIframe,
+        return E('div', { 'class': 'zapret-app fade-in' }, [
+            E('div', { 'class': 'cbi-section' }, [
+                E('div', { 'class': 'cbi-section-title' }, _('Blockcheck')),
+                E('div', { 'class': 'cbi-section-descr' }, _('Terminal window for running blockcheck.sh to test DPI bypass strategies.')),
+                E('div', { 'style': 'margin-bottom: 10px;' }, [
+                    helpButton,
+                    ' ',
+                    createCommandButton
+                ]),
+                terminalIframe
+            ])
         ]);
     },
 

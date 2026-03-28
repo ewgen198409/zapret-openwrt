@@ -312,6 +312,7 @@ function get_actual_release
 	REL_ACTUAL_TAG=
 	REL_ACTUAL_PRE=
 	REL_ACTUAL_URL=
+	REL_ACTUAL_LUCI_URL=
 	json_load "$(printf '%s' "$REL_JSON")"
 	if [ $? -ne 0 ]; then
 		echo "ERROR: incorrect format of ${ZAP_REL_URL##*/}"
@@ -330,7 +331,6 @@ function get_actual_release
 		json_select "$rel_id"   # enter into releases[rel_id]
 		json_get_var tag tag
 		json_get_var pre prerelease
-		#echo "rel_id = $rel_id    opt_prerelease = $opt_prerelease   pre = $pre"
 		if [ "$opt_prerelease" != "true" ] && [ "$pre" = "1" ]; then
 			json_select ..   # exit from releases[rel_id]
 			continue
@@ -343,9 +343,7 @@ function get_actual_release
 		fi
 		
 		# Get all assets (zapret and luci-app-zapret)
-		local asset_idx=0
-		REL_ACTUAL_URL=
-		REL_ACTUAL_LUCI_URL=
+		local asset_idx=1
 		while true; do
 			json_select "$asset_idx" > /dev/null 2>&1
 			if [ $? -ne 0 ]; then
@@ -372,7 +370,8 @@ function get_actual_release
 			asset_idx=$((asset_idx + 1))
 		done
 		
-		json_select .. ..  # assets -> releases[rel_id] -> releases
+		json_select ..  # exit from assets
+		json_select ..  # exit from releases[rel_id]
 		json_cleanup
 		REL_ACTUAL_TAG="$tag"
 		REL_ACTUAL_PRE="$pre"
@@ -553,14 +552,13 @@ if [ "$opt_update" != "" ]; then
 	# For luci-app-zapret: if we got it from GitHub API, we have the direct URL
 	# Otherwise find it from release page
 	if [ -n "$REL_ACTUAL_LUCI_URL" ]; then
-		# We got luci-app-zapret URL from API
 		LUCI_PKG_URL="$REL_ACTUAL_LUCI_URL"
 	else
 		# Extract directory from ZAP_PKG_URL and try to find luci package
-		local release_dir="${ZAP_PKG_URL%/*}"
+		release_dir="${ZAP_PKG_URL%/*}"
 		LUCI_PKG_URL=$(curl -s "$release_dir/" 2>/dev/null | grep -o "href=\"[^\"]*luci-app-${ZAPRET_CFG_NAME}[^\"]*\.${ZAP_PKG_EXT}[^\"]*\"" | head -1 | cut -d'"' -f2 | awk '{print $1}')
 		if [ -z "$LUCI_PKG_URL" ]; then
-			# Fallback: try common naming pattern
+        # Fallback: try common naming pattern
 			LUCI_PKG_URL="${release_dir}/luci-app-${ZAPRET_CFG_NAME}_${ZAP_PKG_ZIP_VER}-r1_all.${ZAP_PKG_EXT}"
 		fi
 	fi
