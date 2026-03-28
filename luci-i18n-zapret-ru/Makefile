@@ -12,6 +12,7 @@ PKG_MAINTAINER:=remittor <https://github.com/remittor>
 
 LUCI_LANG:=ru
 LUCI_NAME:=luci-app-zapret
+LUCI_PKGARCH:=all
 
 include ../../luci.mk
 
