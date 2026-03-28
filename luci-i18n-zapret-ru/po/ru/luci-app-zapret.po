@@ -1,0 +1,639 @@
+# Russian translations for luci-app-zapret package.
+# Copyright (C) 2024 THE luci-app-zapret'S COPYRIGHT HOLDER
+# This file is distributed under the same license as the luci-app-zapret package.
+# FIRST AUTHOR <EMAIL@ADDRESS>, 2024.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: luci-app-zapret 72.20260328\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2024-01-01 00:00+0000\n"
+"PO-Revision-Date: 2024-01-01 00:00+0000\n"
+"Last-Translator: Automatically generated\n"
+"Language-Team: none\n"
+"Language: ru\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"Plural-Forms: nplurals=3; plural=(n%10==1 && n%100!=11 ? 0 : n%10>=2 && n%10<=4 && (n%100<10 || n%100>=20) ? 1 : 2);\n"
+
+msgid "Unable to get log files"
+msgstr "Не удалось получить файлы логов"
+
+msgid "Unable to execute or read contents"
+msgstr "Не удалось выполнить или прочитать содержимое"
+
+msgid "Unable to get log files"
+msgstr "Не удалось получить файлы логов"
+
+msgid "Unable to read the contents"
+msgstr "Не удалось прочитать содержимое"
+
+msgid "Unable to get log files"
+msgstr "Не удалось получить файлы логов"
+
+msgid "Zapret"
+msgstr "Zapret"
+
+msgid "Log Viewer"
+msgstr "Просмотр логов"
+
+msgid "Scroll to bottom"
+msgstr "Прокрутить вниз"
+
+msgid "Scroll to top"
+msgstr "Прокрутить вверх"
+
+msgid "Showing maximum 40 lines. Use scroll buttons to navigate."
+msgstr "Показано максимум 40 строк. Используйте кнопки прокрутки для навигации."
+
+msgid "Checking for updates..."
+msgstr "Проверка обновлений..."
+
+msgid "Install updates..."
+msgstr "Установка обновлений..."
+
+msgid "Latest version already installed. Use \"Forced reinstall\" to reinstall."
+msgstr "Последняя версия уже установлена. Используйте \"Принудительную переустановку\" для переустановки."
+
+msgid "Forced reinstall enabled - will reinstall current version."
+msgstr "Принудительная переустановка включена - будет переустановлена текущая версия."
+
+msgid "You have unapplied changes"
+msgstr "У вас есть несохраненные изменения"
+
+msgid "Exclude PreReleases"
+msgstr "Исключить предрелизы"
+
+msgid "Forced reinstall packages"
+msgstr "Принудительная переустановка пакетов"
+
+msgid "Cancel"
+msgstr "Отмена"
+
+msgid "Check"
+msgstr "Проверить"
+
+msgid "Install"
+msgstr "Установить"
+
+msgid "Check for upgrades and installation"
+msgstr "Проверка обновлений и установка"
+
+msgid "Forced reinstall enabled - install button is now active."
+msgstr "Принудительная переустановка включена - кнопка установки теперь активна."
+
+msgid "Forced reinstall disabled - install button deactivated."
+msgstr "Принудительная переустановка отключена - кнопка установки деактивирована."
+
+msgid "Updating"
+msgstr "Обновление"
+
+msgid "Error"
+msgstr "Ошибка"
+
+msgid "Disabled"
+msgstr "Отключено"
+
+msgid "Stopped"
+msgstr "Остановлено"
+
+msgid "Starting"
+msgstr "Запуск"
+
+msgid "Running"
+msgstr "Работает"
+
+msgid "Failed to get %s service info: %s"
+msgstr "Не удалось получить информацию о службе %s: %s"
+
+msgid "Failed to get %s init status: %s"
+msgstr "Не удалось получить статус инициализации %s: %s"
+
+msgid "Failed to get strat list: %s"
+msgstr "Не удалось получить список стратегий: %s"
+
+msgid "Command failed"
+msgstr "Команда не удалась"
+
+msgid "Service action failed \"%s %s\": %s"
+msgstr "Ошибка действия службы \"%s %s\": %s"
+
+msgid "Unknown"
+msgstr "Неизвестно"
+
+msgid "Enabled"
+msgstr "Включено"
+
+msgid "Service autorun status"
+msgstr "Статус автозапуска службы"
+
+msgid "Service daemons status"
+msgstr "Статус демонов службы"
+
+msgid "FW type"
+msgstr "Тип межсетевого экрана"
+
+msgid "HostLists update mode"
+msgstr "Режим обновления списков хостов"
+
+msgid "user entries only"
+msgstr "только пользовательские записи"
+
+msgid "Dismiss"
+msgstr "Отклонить"
+
+msgid "Save"
+msgstr "Сохранить"
+
+msgid "Contents have been saved."
+msgstr "Содержимое было сохранено."
+
+msgid "Unable to save the contents"
+msgstr "Не удалось сохранить содержимое"
+
+msgid "Loading"
+msgstr "Загрузка"
+
+msgid "Unable to read the contents"
+msgstr "Не удалось прочитать содержимое"
+
+msgid "Unable to execute or read contents"
+msgstr "Не удалось выполнить или прочитать содержимое"
+
+msgid "Unable to read the service info"
+msgstr "Не удалось прочитать информацию о службе"
+
+msgid "Unable to read process list"
+msgstr "Не удалось прочитать список процессов"
+
+msgid "Unable to enumerate installed packages"
+msgstr "Не удалось перечислить установленные пакеты"
+
+msgid "Error"
+msgstr "Ошибка"
+
+msgid "Unable to run service action."
+msgstr "Не удалось запустить действие службы."
+
+msgid "Unable to run sync_config.sh script."
+msgstr "Не удалось запустить скрипт sync_config.sh."
+
+msgid "Unable to run restore-def-cfg.sh script."
+msgstr "Не удалось запустить скрипт restore-def-cfg.sh."
+
+msgid "Restore all base settings"
+msgstr "Восстановить все базовые настройки"
+
+msgid "Restore ipset configs"
+msgstr "Восстановить конфигурации ipset"
+
+msgid "Set AutoHostList mode"
+msgstr "Установить режим AutoHostList"
+
+msgid "NFQWS_OPT strategy: "
+msgstr "Стратегия NFQWS_OPT: "
+
+msgid "Reset settings"
+msgstr "Сбросить настройки"
+
+msgid "Reset settings to default"
+msgstr "Сбросить настройки по умолчанию"
+
+msgid "Service autorun control"
+msgstr "Управление автозапуском службы"
+
+msgid "Service daemons control"
+msgstr "Управление демонами службы"
+
+msgid "Enable"
+msgstr "Включить"
+
+msgid "Disable"
+msgstr "Отключить"
+
+msgid "Start"
+msgstr "Запустить"
+
+msgid "Restart"
+msgstr "Перезапустить"
+
+msgid "Stop"
+msgstr "Остановить"
+
+msgid "Update HostLists"
+msgstr "Обновить списки хостов"
+
+msgid "Update"
+msgstr "Обновить"
+
+msgid "Upgrading the package"
+msgstr "Обновление пакета"
+
+msgid "Upgrade…"
+msgstr "Обновить…"
+
+msgid "Enter domains separated by spaces or new lines\nExample: rutracker.org iana.org startmail.com"
+msgstr "Введите домены, разделенные пробелами или новыми строками\nПример: rutracker.org iana.org startmail.com"
+
+msgid "Test"
+msgstr "Тест"
+
+msgid "Auto Test"
+msgstr "Авто тест"
+
+msgid "Clear"
+msgstr "Очистить"
+
+msgid "Domain Test"
+msgstr "Тест домена"
+
+msgid "Test availability of domains with current zapret configuration."
+msgstr "Проверка доступности доменов с текущей конфигурацией zapret."
+
+msgid "Domains (space separated):"
+msgstr "Домены (разделенные пробелами):"
+
+msgid "No domains entered."
+msgstr "Домены не введены."
+
+msgid "Stop Test"
+msgstr "Остановить тест"
+
+msgid "Auto Test"
+msgstr "Авто тест"
+
+msgid "Test stopped by user.\n"
+msgstr "Тест остановлен пользователем.\n"
+
+msgid "Test completed.\n"
+msgstr "Тест завершен.\n"
+
+msgid "Loading domain list...\n"
+msgstr "Загрузка списка доменов...\n"
+
+msgid "Auto test error: "
+msgstr "Ошибка авто теста: "
+
+msgid "Expecting:"
+msgstr "Ожидается:"
+
+msgid "One of the following:"
+msgstr "Один из следующих:"
+
+msgid "valid IP address"
+msgstr "действительный IP-адрес"
+
+msgid "valid address#port"
+msgstr "действительный адрес#порт"
+
+msgid "valid URL"
+msgstr "действительный URL"
+
+msgid "Main settings"
+msgstr "Основные настройки"
+
+msgid "FWTYPE"
+msgstr "Тип межсетевого экрана"
+
+msgid "POSTNAT"
+msgstr "POSTNAT"
+
+msgid "FLOWOFFLOAD"
+msgstr "FLOWOFFLOAD"
+
+msgid "INIT_APPLY_FW"
+msgstr "INIT_APPLY_FW"
+
+msgid "DISABLE_IPV4"
+msgstr "DISABLE_IPV4"
+
+msgid "DISABLE_IPV6"
+msgstr "DISABLE_IPV6"
+
+msgid "MODE_FILTER"
+msgstr "MODE_FILTER"
+
+msgid "WS_USER"
+msgstr "WS_USER"
+
+msgid "DAEMON_LOG_ENABLE"
+msgstr "DAEMON_LOG_ENABLE"
+
+msgid "OPENWRT_LAN"
+msgstr "OPENWRT_LAN"
+
+msgid "Default"
+msgstr "По умолчанию"
+
+msgid "OPENWRT_WAN4"
+msgstr "OPENWRT_WAN4"
+
+msgid "OPENWRT_WAN6"
+msgstr "OPENWRT_WAN6"
+
+msgid "NFQWS options"
+msgstr "Опции NFQWS"
+
+msgid "Help"
+msgstr "Помощь"
+
+msgid "Visit user discussion to select strategy!!!"
+msgstr "Посетите обсуждение пользователей для выбора стратегии!!!"
+
+msgid "Edit"
+msgstr "Редактировать"
+
+msgid "Example"
+msgstr "Пример"
+
+msgid "NFQWS_ENABLE"
+msgstr "NFQWS_ENABLE"
+
+msgid "nfqws option for DPI desync attack"
+msgstr "опция nfqws для атаки DPI desync"
+
+msgid "DESYNC_MARK"
+msgstr "DESYNC_MARK"
+
+msgid "DESYNC_MARK_POSTNAT"
+msgstr "DESYNC_MARK_POSTNAT"
+
+msgid "FILTER_MARK"
+msgstr "FILTER_MARK"
+
+msgid "NFQWS_PORTS_TCP"
+msgstr "NFQWS_PORTS_TCP"
+
+msgid "NFQWS_PORTS_UDP"
+msgstr "NFQWS_PORTS_UDP"
+
+msgid "NFQWS_TCP_PKT_OUT"
+msgstr "NFQWS_TCP_PKT_OUT"
+
+msgid "NFQWS_TCP_PKT_IN"
+msgstr "NFQWS_TCP_PKT_IN"
+
+msgid "NFQWS_UDP_PKT_OUT"
+msgstr "NFQWS_UDP_PKT_OUT"
+
+msgid "NFQWS_UDP_PKT_IN"
+msgstr "NFQWS_UDP_PKT_IN"
+
+msgid "NFQWS_PORTS_TCP_KEEPALIVE"
+msgstr "NFQWS_PORTS_TCP_KEEPALIVE"
+
+msgid "NFQWS_PORTS_UDP_KEEPALIVE"
+msgstr "NFQWS_PORTS_UDP_KEEPALIVE"
+
+msgid "AutoHostList"
+msgstr "AutoHostList"
+
+msgid "Use AutoHostList mode"
+msgstr "Использовать режим AutoHostList"
+
+msgid "RETRANS_THRESHOLD"
+msgstr "RETRANS_THRESHOLD"
+
+msgid "FAIL_THRESHOLD"
+msgstr "FAIL_THRESHOLD"
+
+msgid "FAIL_TIME"
+msgstr "FAIL_TIME"
+
+msgid "Auto host list entries"
+msgstr "Записи автоматического списка хостов"
+
+msgid "Auto host list"
+msgstr "Автоматический список хостов"
+
+msgid "Auto host debug list entries"
+msgstr "Записи отладочного списка хостов"
+
+msgid "Auto host debug list"
+msgstr "Отладочный список хостов"
+
+msgid "DEBUGLOG"
+msgstr "DEBUGLOG"
+
+msgid "Host lists"
+msgstr "Списки хостов"
+
+msgid "Google hostname entries"
+msgstr "Записи хостов Google"
+
+msgid "User hostname entries <HOSTLIST>"
+msgstr "Пользовательские записи хостов <HOSTLIST>"
+
+msgid "User excluded hostname entries"
+msgstr "Исключенные пользовательские записи хостов"
+
+msgid "Excluded IP entries"
+msgstr "Исключенные IP-записи"
+
+msgid "User IP entries"
+msgstr "Пользовательские IP-записи"
+
+msgid "User excluded IP entries"
+msgstr "Исключенные пользовательские IP-записи"
+
+msgid "Custom file #"
+msgstr "Пользовательский файл №"
+
+msgid "custom.d script #"
+msgstr "скрипт custom.d №"
+
+msgid "DISABLE_CUSTOM"
+msgstr "DISABLE_CUSTOM"
+
+msgid "Create Blockcheck Command"
+msgstr "Создать команду Blockcheck"
+
+msgid "Generated command will appear here"
+msgstr "Сгенерированная команда появится здесь"
+
+msgid "Generate"
+msgstr "Сгенерировать"
+
+msgid "Copy"
+msgstr "Копировать"
+
+msgid "Close"
+msgstr "Закрыть"
+
+msgid "Help - Blockcheck"
+msgstr "Помощь - Blockcheck"
+
+msgid "Проверка провайдера"
+msgstr "Проверка провайдера"
+
+msgid "Перед настройкой нужно провести исследование какую бяку устроил вам ваш провайдер."
+msgstr "Перед настройкой нужно провести исследование какую бяку устроил вам ваш провайдер."
+
+msgid "Нужно выяснить не подменяет ли он DNS и какой метод обхода DPI работает. В этом вам поможет скрипт blockcheck.sh."
+msgstr "Нужно выяснить не подменяет ли он DNS и какой метод обхода DPI работает. В этом вам поможет скрипт blockcheck.sh."
+
+msgid "Если DNS подменяется, но провайдер не перехватывает обращения к сторонним DNS, поменяйте DNS на публичный. Например: 8.8.8.8, 8.8.4.4, 1.1.1.1, 1.0.0.1, 9.9.9.9 Если DNS подменяется и провайдер перехватывает обращения к сторонним DNS, настройте dnscrypt. Еще один эффективный вариант - использовать ресолвер от yandex 77.88.8.88 на нестандартном порту 1253. Многие провайдеры не анализируют обращения к DNS на нестандартных портах. blockcheck если видит подмену DNS автоматически переключается на DoH сервера."
+msgstr "Если DNS подменяется, но провайдер не перехватывает обращения к сторонним DNS, поменяйте DNS на публичный. Например: 8.8.8.8, 8.8.4.4, 1.1.1.1, 1.0.0.1, 9.9.9.9 Если DNS подменяется и провайдер перехватывает обращения к сторонним DNS, настройте dnscrypt. Еще один эффективный вариант - использовать ресолвер от yandex 77.88.8.88 на нестандартном порту 1253. Многие провайдеры не анализируют обращения к DNS на нестандартных портах. blockcheck если видит подмену DNS автоматически переключается на DoH сервера."
+
+msgid "Следует прогнать blockcheck по нескольким заблокированным сайтам и выявить общий характер блокировок. Разные сайты могут быть заблокированы по-разному, нужно искать такую технику, которая работает на большинстве. Чтобы записать вывод blockcheck.sh в файл, выполните: ./blockcheck.sh | tee /tmp/blockcheck.txt."
+msgstr "Следует прогнать blockcheck по нескольким заблокированным сайтам и выявить общий характер блокировок. Разные сайты могут быть заблокированы по-разному, нужно искать такую технику, которая работает на большинстве. Чтобы записать вывод blockcheck.sh в файл, выполните: ./blockcheck.sh | tee /tmp/blockcheck.txt."
+
+msgid "Проанализируйте какие методы дурения DPI работают, в соответствии с ними настройте /opt/zapret/config."
+msgstr "Проанализируйте какие методы дурения DPI работают, в соответствии с ними настройте /opt/zapret/config."
+
+msgid "Имейте в виду, что у провайдеров может быть несколько DPI или запросы могут идти через разные каналы по методу балансировки нагрузки. Балансировка может означать, что на разных ветках разные DPI или они находятся на разных хопах. Такая ситуация может выражаться в нестабильности работы обхода. Дернули несколько раз curl. То работает, то connection reset или редирект. blockcheck.sh выдает странноватые результаты. То split работает на 2-м. хопе, то на 4-м. Достоверность результата вызывает сомнения. В этом случае задайте несколько повторов одного и того же теста. Тест будет считаться успешным только, если все попытки пройдут успешно."
+msgstr "Имейте в виду, что у провайдеров может быть несколько DPI или запросы могут идти через разные каналы по методу балансировки нагрузки. Балансировка может означать, что на разных ветках разные DPI или они находятся на разных хопах. Такая ситуация может выражаться в нестабильности работы обхода. Дернули несколько раз curl. То работает, то connection reset или редирект. blockcheck.sh выдает странноватые результаты. То split работает на 2-м. хопе, то на 4-м. Достоверность результата вызывает сомнения. В этом случае задайте несколько повторов одного и того же теста. Тест будет считаться успешным только, если все попытки пройдут успешно."
+
+msgid "При использовании autottl следует протестировать как можно больше разных доменов. Эта техника может на одних провайдерах работать стабильно, на других потребуется выяснить при каких параметрах она стабильна, на третьих полный хаос, и проще отказаться."
+msgstr "При использовании autottl следует протестировать как можно больше разных доменов. Эта техника может на одних провайдерах работать стабильно, на других потребуется выяснить при каких параметрах она стабильна, на третьих полный хаос, и проще отказаться."
+
+msgid "Blockcheck имеет 3 уровня сканирования."
+msgstr "Blockcheck имеет 3 уровня сканирования."
+
+msgid "quick - максимально быстро найти хоть что-то работающее."
+msgstr "quick - максимально быстро найти хоть что-то работающее."
+
+msgid "standard дает возможность провести исследование как и на что реагирует DPI в плане методов обхода."
+msgstr "standard дает возможность провести исследование как и на что реагирует DPI в плане методов обхода."
+
+msgid "force дает максимум проверок даже в случаях, когда ресурс работает без обхода или с более простыми стратегиями."
+msgstr "force дает максимум проверок даже в случаях, когда ресурс работает без обхода или с более простыми стратегиями."
+
+msgid "Есть ряд других параметров, которые не будут спрашиваться в диалоге, но которые можно переопределить через переменные."
+msgstr "Есть ряд других параметров, которые не будут спрашиваться в диалоге, но которые можно переопределить через переменные."
+
+msgid "CURL - замена программы curl"
+msgstr "CURL - замена программы curl"
+
+msgid "CURL_MAX_TIME - время таймаута curl в секундах"
+msgstr "CURL_MAX_TIME - время таймаута curl в секундах"
+
+msgid "CURL_MAX_TIME_QUIC - время таймаута curl для quic. если не задано, используется значение CURL_MAX_TIME"
+msgstr "CURL_MAX_TIME_QUIC - время таймаута curl для quic. если не задано, используется значение CURL_MAX_TIME"
+
+msgid "CURL_MAX_TIME_DOH - время таймаута curl для DoH серверов"
+msgstr "CURL_MAX_TIME_DOH - время таймаута curl для DoH серверов"
+
+msgid "CURL_CMD=1 - показывать команды curl"
+msgstr "CURL_CMD=1 - показывать команды curl"
+
+msgid "CURL_OPT - дополнительные параметры curl. `-k` - игнор сертификатов. `-v` - подробный вывод протокола"
+msgstr "CURL_OPT - дополнительные параметры curl. `-k` - игнор сертификатов. `-v` - подробный вывод протокола"
+
+msgid "CURL_HTTPS_GET=1 - использовать метод GET вместо HEAD для https"
+msgstr "CURL_HTTPS_GET=1 - использовать метод GET вместо HEAD для https"
+
+msgid "DOMAINS - список тестируемых доменов через пробел"
+msgstr "DOMAINS - список тестируемых доменов через пробел"
+
+msgid "IPVS=4|6|46 - тестируемые версии ip протокола"
+msgstr "IPVS=4|6|46 - тестируемые версии ip протокола"
+
+msgid "ENABLE_HTTP=0|1 - включить тест plain http"
+msgstr "ENABLE_HTTP=0|1 - включить тест plain http"
+
+msgid "ENABLE_HTTPS_TLS12=0|1 - включить тест https TLS 1.2"
+msgstr "ENABLE_HTTPS_TLS12=0|1 - включить тест https TLS 1.2"
+
+msgid "ENABLE_HTTPS_TLS13=0|1 - включить тест https TLS 1.3"
+msgstr "ENABLE_HTTPS_TLS13=0|1 - включить тест https TLS 1.3"
+
+msgid "ENABLE_HTTP3=0|1 - включить тест QUIC"
+msgstr "ENABLE_HTTP3=0|1 - включить тест QUIC"
+
+msgid "REPEATS - количество попыток тестирования"
+msgstr "REPEATS - количество попыток тестирования"
+
+msgid "PARALLEL=0|1 - включить параллельные попытки. может обидеть сайт из-за долбежки и привести к неверному результату"
+msgstr "PARALLEL=0|1 - включить параллельные попытки. может обидеть сайт из-за долбежки и привести к неверному результату"
+
+msgid "SCANLEVEL=quick|standard|force - уровень сканирования"
+msgstr "SCANLEVEL=quick|standard|force - уровень сканирования"
+
+msgid "BATCH=1 - пакетный режим без вопросов и ожидания ввода в консоли"
+msgstr "BATCH=1 - пакетный режим без вопросов и ожидания ввода в консоли"
+
+msgid "HTTP_PORT, HTTPS_PORT, QUIC_PORT - номера портов для соответствующих протоколов"
+msgstr "HTTP_PORT, HTTPS_PORT, QUIC_PORT - номера портов для соответствующих протоколов"
+
+msgid "SKIP_DNSCHECK=1 - отказ от проверки DNS"
+msgstr "SKIP_DNSCHECK=1 - отказ от проверки DNS"
+
+msgid "SKIP_IPBLOCK=1 - отказ от тестов блокировки по порту или IP"
+msgstr "SKIP_IPBLOCK=1 - отказ от тестов блокировки по порту или IP"
+
+msgid "SKIP_TPWS=1 - отказ от тестов tpws"
+msgstr "SKIP_TPWS=1 - отказ от тестов tpws"
+
+msgid "SKIP_PKTWS=1 - отказ от тестов nfqws/dvtws/winws"
+msgstr "SKIP_PKTWS=1 - отказ от тестов nfqws/dvtws/winws"
+
+msgid "PKTWS_EXTRA, TPWS_EXTRA - дополнительные параметры nfqws/dvtws/winws и tpws, указываемые после основной стратегии"
+msgstr "PKTWS_EXTRA, TPWS_EXTRA - дополнительные параметры nfqws/dvtws/winws и tpws, указываемые после основной стратегии"
+
+msgid "PKTWS_EXTRA_1 .. PKTWS_EXTRA_9, TPWS_EXTRA_1 .. TPWS_EXTRA_9 - отдельно дополнительные параметры, содержащие пробелы"
+msgstr "PKTWS_EXTRA_1 .. PKTWS_EXTRA_9, TPWS_EXTRA_1 .. TPWS_EXTRA_9 - отдельно дополнительные параметры, содержащие пробелы"
+
+msgid "PKTWS_EXTRA_PRE - дополнительные параметры для nfqws/dvtws/winws, указываемые перед основной стратегии"
+msgstr "PKTWS_EXTRA_PRE - дополнительные параметры для nfqws/dvtws/winws, указываемые перед основной стратегии"
+
+msgid "PKTWS_EXTRA_PRE_1 .. PKTWS_EXTRA_PRE_9 - отдельно дополнительные параметры, содержащие пробелы"
+msgstr "PKTWS_EXTRA_PRE_1 .. PKTWS_EXTRA_PRE_9 - отдельно дополнительные параметры, содержащие пробелы"
+
+msgid "SECURE_DNS=0|1 - принудительно выключить или включить DoH"
+msgstr "SECURE_DNS=0|1 - принудительно выключить или включить DoH"
+
+msgid "DOH_SERVERS - список URL DoH через пробел для автоматического выбора работающего сервера"
+msgstr "DOH_SERVERS - список URL DoH через пробел для автоматического выбора работающего сервера"
+
+msgid "DOH_SERVER - конкретный DoH URL, отказ от поиска"
+msgstr "DOH_SERVER - конкретный DoH URL, отказ от поиска"
+
+msgid "UNBLOCKED_DOM - незаблокированный домен, который используется для тестов IP block"
+msgstr "UNBLOCKED_DOM - незаблокированный домен, который используется для тестов IP block"
+
+msgid "MIN_TTL,MAX_TTL - пределы тестов с TTL. MAX_TTL=0 отключает тесты."
+msgstr "MIN_TTL,MAX_TTL - пределы тестов с TTL. MAX_TTL=0 отключает тесты."
+
+msgid "MIN_AUTOTTL_DELTA,MAX_AUTOTTL_DELTA - пределы тестов с autottl по дельте. MAX_AUTOTTL_DELTA=0 отключает тесты."
+msgstr "MIN_AUTOTTL_DELTA,MAX_AUTOTTL_DELTA - пределы тестов с autottl по дельте. MAX_AUTOTTL_DELTA=0 отключает тесты."
+
+msgid "SIMULATE=1 - включить режим симуляции для отладки логики скрипта. отключаются реальные запросы через curl, заменяются рандомным результатом."
+msgstr "SIMULATE=1 - включить режим симуляции для отладки логики скрипта. отключаются реальные запросы через curl, заменяются рандомным результатом."
+
+msgid "SIM_SUCCESS_RATE=<percent> - вероятность успеха симуляции в процентах"
+msgstr "SIM_SUCCESS_RATE=<percent> - вероятность успеха симуляции в процентах"
+
+msgid "Пример запуска с переменными:"
+msgstr "Пример запуска с переменными:"
+
+msgid "SECURE_DNS=1 SKIP_TPWS=1 CURL_MAX_TIME=1 CURL=/tmp/curl /opt/zapret/blockcheck.sh"
+msgstr "SECURE_DNS=1 SKIP_TPWS=1 CURL_MAX_TIME=1 CURL=/tmp/curl /opt/zapret/blockcheck.sh"
+
+msgid "СКАН ПОРТОВ"
+msgstr "СКАН ПОРТОВ"
+
+msgid "Если в системе присутствует совместимый netcat (ncat от nmap или openbsd ncat. в OpenWrt по умолчанию нет), то выполняется сканирование портов http или https всех IP адресов домена. Если ни один IP не отвечает, то результат очевиден. Можно останавливать сканирование. Автоматически оно не остановится, потому что netcat-ы недостаточно подробно информируют о причинах ошибки. Если доступна только часть IP, то можно ожидать хаотичных сбоев, т.к. подключение идет к случайному адресу из списка."
+msgstr "Если в системе присутствует совместимый netcat (ncat от nmap или openbsd ncat. в OpenWrt по умолчанию нет), то выполняется сканирование портов http или https всех IP адресов домена. Если ни один IP не отвечает, то результат очевиден. Можно останавливать сканирование. Автоматически оно не остановится, потому что netcat-ы недостаточно подробно информируют о причинах ошибки. Если доступна только часть IP, то можно ожидать хаотичных сбоев, т.к. подключение идет к случайному адресу из списка."
+
+msgid "ПРОВЕРКА НА ЧАСТИЧНЫЙ IP block"
+msgstr "ПРОВЕРКА НА ЧАСТИЧНЫЙ IP block"
+
+msgid "Под частичным блоком подразумевается ситуация, когда коннект на порты есть, но по определенному транспортному или прикладному протоколу всегда идет реакция DPI вне зависимости от запрашиваемого домена. Эта проверка так же не выдаст автоматического вердикта/решения, потому что может быть очень много вариаций. Вместо этого анализ происходящего возложен на самого пользователя или тех, кто будет читать лог. Суть этой проверки в попытке дернуть неблокированный IP с блокированным доменом и наоборот, анализируя при этом реакцию DPI. Реакция DPI обычно проявляется в виде таймаута (зависание запроса), connection reset или http redirect на заглушку. Любой другой вариант скорее всего говорит об отсутствии реакции DPI. В частности, любые http коды, кроме редиректа, ведущего именно на заглушку, а не куда-то еще. На TLS - ошибки handshake без задержек. Ошибка сертификата может говорить как о реакции DPI с MiTM атакой (подмена сертификата), так и о том, что принимающий сервер неблокированного домена все равно принимает ваш TLS handshake с чужим доменом, пытаясь при этом выдать сертификат без запрошенного домена. Требуется дополнительный анализ. Если выяснено, что есть блокировка по домену. Если на неблокированный домен есть реакция на IP адресах блокированного домена, значит имеет место блок по IP. Соответственно, если есть и то, и другое, значит есть и блок по IP, и блок по домену. Неблокированный домен первым делом проверяется на доступность на оригинальном адресе. При недоступности тест отменяется, поскольку он будет неинформативен."
+msgstr "Под частичным блоком подразумевается ситуация, когда коннект на порты есть, но по определенному транспортному или прикладному протоколу всегда идет реакция DPI вне зависимости от запрашиваемого домена. Эта проверка так же не выдаст автоматического вердикта/решения, потому что может быть очень много вариаций. Вместо этого анализ происходящего возложен на самого пользователя или тех, кто будет читать лог. Суть этой проверки в попытке дернуть неблокированный IP с блокированным доменом и наоборот, анализируя при этом реакцию DPI. Реакция DPI обычно проявляется в виде таймаута (зависание запроса), connection reset или http redirect на заглушку. Любой другой вариант скорее всего говорит об отсутствии реакции DPI. В частности, любые http коды, кроме редиректа, ведущего именно на заглушку, а не куда-то еще. На TLS - ошибки handshake без задержек. Ошибка сертификата может говорить как о реакции DPI с MiTM атакой (подмена сертификата), так и о том, что принимающий сервер неблокированного домена все равно принимает ваш TLS handshake с чужим доменом, пытаясь при этом выдать сертификат без запрошенного домена. Требуется дополнительный анализ. Если выяснено, что есть блокировка по домену. Если на неблокированный домен есть реакция на IP адресах блокированного домена, значит имеет место блок по IP. Соответственно, если есть и то, и другое, значит есть и блок по IP, и блок по домену. Неблокированный домен первым делом проверяется на доступность на оригинальном адресе. При недоступности тест отменяется, поскольку он будет неинформативен."
+
+msgid "Если выяснено, что есть частичный блок по IP на DPI, то скорее всего все остальные тесты будут провалены вне зависимости от стратегий обхода. Но бывают и некоторые исключения. Например, пробитие через ipv6 option headers. Или сделать так, чтобы он не мог распознать протокол прикладного уровня. Дальнейшие тесты могут быть не лишены смысла."
+msgstr "Если выяснено, что есть частичный блок по IP на DPI, то скорее всего все остальные тесты будут провалены вне зависимости от стратегий обхода. Но бывают и некоторые исключения. Например, пробитие через ipv6 option headers. Или сделать так, чтобы он не мог распознать протокол прикладного уровня. Дальнейшие тесты могут быть не лишены смысла."
+
+msgid "ПРИМЕРЫ БЛОКИРОВКИ ТОЛЬКО ПО ДОМЕНУ БЕЗ БЛОКА ПО IP"
+msgstr "ПРИМЕРЫ БЛОКИРОВКИ ТОЛЬКО ПО ДОМЕНУ БЕЗ БЛОКА ПО IP"
+
+msgid "ПРИМЕР ПОЛНОГО IP БЛОКА ИЛИ БЛОКА TCP ПОРТА ПРИ ОТСУТСТВИИ БЛОКА ПО ДОМЕНУ"
+msgstr "ПРИМЕР ПОЛНОГО IP БЛОКА ИЛИ БЛОКА TCP ПОРТА ПРИ ОТСУТСТВИИ БЛОКА ПО ДОМЕНУ"
+
+msgid "Terminal window for running blockcheck.sh to test DPI bypass strategies."
+msgstr "Терминальное окно для запуска blockcheck.sh для тестирования стратегий обхода DPI."
+
+msgid "Blockcheck"
+msgstr "Blockcheck"
