@@ -96,6 +96,7 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_BIN) ./restore-def-cfg.sh $(1)/opt/zapret/restore-def-cfg.sh
 	$(INSTALL_BIN) ./sync_config.sh     $(1)/opt/zapret/sync_config.sh
 	$(INSTALL_BIN) ./update-pkg.sh      $(1)/opt/zapret/update-pkg.sh
+	$(INSTALL_BIN) ./domain-test.sh      $(1)/opt/zapret/domain-test.sh
 	# Fix permisions
 	chmod 644 $(1)/opt/zapret/ipset/*.txt
 	chmod 644 $(1)/opt/zapret/ipset_def/*.txt

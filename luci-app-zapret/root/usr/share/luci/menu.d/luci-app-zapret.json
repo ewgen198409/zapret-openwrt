@@ -51,5 +51,20 @@
 			"type": "view",
 			"path": "zapret/blockcheck"
 		}
+	},
+	
+	"admin/services/zapret/domain_test": {
+		"title": "Domain Test",
+		"order": 50,
+		"action": {
+			"type": "view",
+			"path": "zapret/domain_test"
+		},
+		"depends": {
+			"acl": [ "luci-app-zapret" ],
+			"fs": {
+				"/usr/libexec/luci/zapret/domain-test.sh": "executable"
+			}
+		}
 	}
 }
