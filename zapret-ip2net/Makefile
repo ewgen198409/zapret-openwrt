@@ -1,7 +1,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=zapret-ip2net
-PKG_VERSION:=72.20260312
+PKG_VERSION:=72.20260328
 
 PKG_MAINTAINER:=bol-van
 PKG_LICENSE:=MIT
