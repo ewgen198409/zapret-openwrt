@@ -1,4 +1,5 @@
 'use strict';
+'require view';
 'require fs';
 'require ui';
 'require view.zapret.tools as tools';
@@ -66,23 +67,26 @@ return view.extend({
 
         var tempFile = '/tmp/domain_test_input.txt';
         var outputFile = '/tmp/domain_test_output.txt';
+        var scriptPath = '/opt/zapret/domain-test.sh';
 
         // Записываем домены в временный файл (по одному на строку)
         fs.write(tempFile, domains.join('\n') + '\n').then(function() {
+            // Проверяем существование скрипта
+            return fs.stat(scriptPath);
+        }).then(function() {
             // Вызываем бэкенд-скрипт
-            return fs.exec('/usr/libexec/luci/zapret/domain-test.sh', [tempFile, outputFile]);
+            return fs.exec(scriptPath, [tempFile, outputFile]);
         }).then(function(res) {
             // Читаем результат
             return fs.read(outputFile);
         }).then(function(content) {
             resultArea.value = content;
-            // Удаляем временные файлы
-            fs.remove(tempFile);
-            fs.remove(outputFile);
         }).catch(function(e) {
             resultArea.value = _('Error: ') + e.message;
-            fs.remove(tempFile);
-            fs.remove(outputFile);
+        }).finally(function() {
+            // Удаляем временные файлы (если они есть)
+            fs.remove(tempFile).catch(function() {});
+            fs.remove(outputFile).catch(function() {});
         });
     }
 });
