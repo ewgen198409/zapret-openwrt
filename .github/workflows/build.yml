@@ -229,6 +229,7 @@ jobs:
               mkdir -p $OUT_DIR
               touch $OUT_DIR/zapret_$PKGVER-$ARCH.$PKGTYPE
               touch $OUT_DIR/luci-app-zapret_$PKGVER-all.$PKGTYPE
+              touch $OUT_DIR/luci-i18n-zapret-ru_$PKGVER-all.$PKGTYPE
           fi
           
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
@@ -317,10 +318,18 @@ jobs:
           LUCI_APK=$( find . -type f -path "*/zapret,apk,*/luci-app-zapret*.apk" -print | head -n 1 )
           LUCI_I18N_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-i18n-zapret-ru*.ipk" -print | head -n 1 )
           LUCI_I18N_APK=$( find . -type f -path "*/zapret,apk,*/luci-i18n-zapret-ru*.apk" -print | head -n 1 )
-          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
-          find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_APK" "{}/" \;
-          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_I18N_IPK" "{}/" \;
-          find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_I18N_APK" "{}/" \;
+          if [ -n "$LUCI_IPK" ]; then
+            find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
+          fi
+          if [ -n "$LUCI_APK" ]; then
+            find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_APK" "{}/" \;
+          fi
+          if [ -n "$LUCI_I18N_IPK" ]; then
+            find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_I18N_IPK" "{}/" \;
+          fi
+          if [ -n "$LUCI_I18N_APK" ]; then
+            find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_I18N_APK" "{}/" \;
+          fi
           # Prepare files for upload with paths
           mkdir -p release_files
           for arch_dir in sorted/*/; do
