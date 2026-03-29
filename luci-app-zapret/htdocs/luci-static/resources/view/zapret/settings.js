@@ -36,6 +36,7 @@ return view.extend({
             null, // L.resolveDefault(fs.list(tools.parsersDir), null),
             uci.load(tools.appName),
             uci.load('network'),
+            L.resolveDefault(fs.exec('ls', ['/sys/class/net']), null),
         ]).catch(e => {
             ui.addNotification(null, E('p', _('Unable to read the contents') + ': %s '.format(e.message) ));
         });
@@ -47,9 +48,17 @@ return view.extend({
         }
         this.appStatusCode = data[0].code;
 
-        var interfaces = [];
-        L.uci.sections('network', 'interface', function(s) { interfaces.push(s['.name']); });
-        interfaces = interfaces.filter(iface => iface !== 'loopback');
+        var interfaces = (function() {
+            // Try to get real network devices from /sys/class/net via ls
+            if (data[4] && data[4].code === 0 && data[4].stdout) {
+                var devs = data[4].stdout.trim().split(/\s+/).filter(n => n && n !== 'lo');
+                if (devs.length > 0) return devs.sort();
+            }
+            // Fallback to UCI interfaces
+            var ifaces = [];
+            L.uci.sections('network', 'interface', function(s) { ifaces.push(s['.name']); });
+            return ifaces.filter(i => i !== 'loopback');
+        })();
 
         let m, s, o, tabname;
 
@@ -109,29 +118,152 @@ return view.extend({
         o.rmempty = false;
         o.default = 0;
 
+        // Smart defaults: guess LAN/WAN from known device names
+        var guessLan = interfaces.find(n => n === 'br-lan') ||
+                       interfaces.find(n => /^br-/.test(n)) ||
+                       interfaces.find(n => n === 'lan') || '';
+        var guessWan4 = interfaces.find(n => n === 'wan') ||
+                        interfaces.find(n => /^wan/.test(n)) || '';
+        var guessWan6 = interfaces.find(n => n === 'wan6') ||
+                        interfaces.find(n => /^wan6/.test(n)) ||
+                        guessWan4 || '';
+
+        var DEFAULT_TOKEN = '__default__';
+
+        var makeDefaultLabel = function(guess) {
+            return guess ? _('Default') + ' (' + guess + ')' : _('Default');
+        };
+
+        var makeWriteFn = function(key) {
+            return function(section_id, value) {
+                var vals = Array.isArray(value) ? value : [value];
+                // Remove sentinel and empty values
+                var filtered = vals.filter(v => v !== DEFAULT_TOKEN && v !== '');
+                if (filtered.length === 0 || vals.indexOf(DEFAULT_TOKEN) !== -1) {
+                        uci.unset(tools.appName, section_id, key);
+                    return Promise.resolve();
+                }
+                return uci.set(tools.appName, section_id, key, filtered.join(' '));
+            };
+        };
+
+        var makeRemoveFn = function(key) {
+            return function(section_id) {
+                uci.unset(tools.appName, section_id, key);
+                return Promise.resolve();
+            };
+        };
+
+        var makeCfgvalueFn = function(key) {
+            return function(section_id) {
+                var val = uci.get(tools.appName, section_id, key);
+                // If key absent or empty — return sentinel so "Default" item is selected
+                if (!val || val.trim() === '') return DEFAULT_TOKEN;
+                return val;
+            };
+        };
+
+        var attachDefaultLogic = function(node) {
+            if (!node) return;
+            // LuCI uses cbi-dropdown with <li data-value="..."> items
+            // We intercept clicks on li items and manage [selected] attribute
+            node.addEventListener('click', function(e) {
+                var li = e.target.closest('li[data-value]');
+                if (!li) return;
+
+                // Wait a tick for LuCI to update [selected] attributes
+                setTimeout(function() {
+                    var allItems = node.querySelectorAll('li[data-value]');
+                    var defItem = node.querySelector('li[data-value="' + DEFAULT_TOKEN + '"]');
+                    if (!defItem) return;
+
+                    var clickedDefault = li.getAttribute('data-value') === DEFAULT_TOKEN;
+
+                    if (clickedDefault) {
+                        // Default clicked — deselect all real items
+                        allItems.forEach(function(item) {
+                            if (item !== defItem && item.hasAttribute('selected')) {
+                                item.click();
+                            }
+                        });
+                    } else {
+                        // Real item clicked — check if any real item is selected
+                        var anyReal = false;
+                        allItems.forEach(function(item) {
+                            if (item !== defItem && item.hasAttribute('selected')) anyReal = true;
+                        });
+                        // If any real selected and Default is also selected — deselect Default
+                        if (anyReal && defItem.hasAttribute('selected')) {
+                            defItem.click();
+                        }
+                        // If no real selected — select Default
+                        if (!anyReal && !defItem.hasAttribute('selected')) {
+                            defItem.click();
+                        }
+                    }
+                }, 50);
+            });
+        };
+
+        var makeRenderWidgetFn = function() {
+            return function() {
+                var node = this.constructor.prototype.renderWidget.apply(this, arguments);
+                attachDefaultLogic(node);
+                // Make the whole widget clickable to open dropdown (not just the arrow)
+                node.addEventListener('click', function(e) {
+                    var li = e.target.closest('li[data-value]');
+                    var openBtn = e.target.closest('span.open');
+                    var moreBtn = e.target.closest('span.more');
+                    // Pass through clicks on arrow, more button, and list items
+                    if (li || openBtn || moreBtn) return;
+                    // For clicks on preview area — just focus the open button so LuCI opens it
+                    var btn = node.querySelector('span.open');
+                    if (btn) {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        btn.focus();
+                        btn.click();
+                    }
+                });
+                return node;
+            };
+        };
+
         o = s.taboption(tabname, form.MultiValue, 'OPENWRT_LAN', _('OPENWRT_LAN'));
-        o.rmempty = true;
-        o.default = [''];
-        o.value('', _('Default'));
+        o.rmempty = false;
+        o.default = [DEFAULT_TOKEN];
+        o.value(DEFAULT_TOKEN, makeDefaultLabel(guessLan));
         if (interfaces.length > 0) {
             interfaces.forEach(iface => o.value(iface, iface));
         }
+        o.cfgvalue = makeCfgvalueFn('OPENWRT_LAN');
+        o.renderWidget = makeRenderWidgetFn();
+        o.write = makeWriteFn('OPENWRT_LAN');
+        o.remove = makeRemoveFn('OPENWRT_LAN');
 
         o = s.taboption(tabname, form.MultiValue, 'OPENWRT_WAN4', _('OPENWRT_WAN4'));
-        o.rmempty = true;
-        o.default = [''];
-        o.value('', _('Default'));
+        o.rmempty = false;
+        o.default = [DEFAULT_TOKEN];
+        o.value(DEFAULT_TOKEN, makeDefaultLabel(guessWan4));
         if (interfaces.length > 0) {
             interfaces.forEach(iface => o.value(iface, iface));
         }
+        o.cfgvalue = makeCfgvalueFn('OPENWRT_WAN4');
+        o.renderWidget = makeRenderWidgetFn();
+        o.write = makeWriteFn('OPENWRT_WAN4');
+        o.remove = makeRemoveFn('OPENWRT_WAN4');
 
         o = s.taboption(tabname, form.MultiValue, 'OPENWRT_WAN6', _('OPENWRT_WAN6'));
-        o.rmempty = true;
-        o.default = [''];
-        o.value('', _('Default'));
+        o.rmempty = false;
+        o.default = [DEFAULT_TOKEN];
+        o.value(DEFAULT_TOKEN, makeDefaultLabel(guessWan6));
         if (interfaces.length > 0) {
             interfaces.forEach(iface => o.value(iface, iface));
         }
+        o.cfgvalue = makeCfgvalueFn('OPENWRT_WAN6');
+        o.renderWidget = makeRenderWidgetFn();
+        o.write = makeWriteFn('OPENWRT_WAN6');
+        o.remove = makeRemoveFn('OPENWRT_WAN6');
 
         /* NFQWS_OPT_DESYNC tab */
 

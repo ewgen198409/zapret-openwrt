@@ -10,6 +10,13 @@ function uncomment_param
 	sed -i "/^#$param=/s/^#//" $fname
 }
 
+function comment_param
+{
+	local param=$1
+	local fname=${2:-$ZAPRET_CONFIG}
+	sed -i "/^$param=/s/^/#/" $fname
+}
+
 function append_param
 {
 	local param=$1
@@ -61,6 +68,8 @@ function sync_param
 			else
 				set_param_value $param $value
 			fi
+		else
+			comment_param $param
 		fi
 	else
 		uncomment_param $param
