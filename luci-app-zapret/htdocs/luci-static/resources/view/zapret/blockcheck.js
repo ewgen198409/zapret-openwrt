@@ -260,7 +260,7 @@ return view.extend({
 
         var terminalIframe = E('iframe', {
             'src': 'http://' + window.location.hostname + ':7681/?arg=/bin/bash',
-            'style': 'width:100%; height:70vh; border:1px solid #ccc; resize: both;',
+            'style': 'width:100%; height:70vh; border:1px solid #ccc; resize: both; opacity: 0.65;',
             'sandbox': 'allow-scripts allow-same-origin',
         });
 

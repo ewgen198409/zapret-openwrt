@@ -69,6 +69,30 @@ body::before {
 .error {
     background-color: #ff4e54 !important;
 }
+
+.zapret-app .cbi-section-title {
+    font-size: 1.3em;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    color: #e0e0e0;
+    border-left: 3px solid rgba(255,255,255,0.4);
+    padding-left: 10px;
+    margin-bottom: 6px;
+}
+
+.zapret-app .cbi-section {
+    background-color: rgba(30, 30, 30, 0.0) !important;
+    -webkit-backdrop-filter: blur(4px);
+    border-radius: 6px;
+}
+
+.zapret-app textarea,
+.zapret-app .cbi-input-textarea {
+    background-color: rgba(20, 20, 20, 0.5) !important;
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    border-radius: 4px;
+    color: inherit;
+}
 `));
 
 return baseclass.extend({
