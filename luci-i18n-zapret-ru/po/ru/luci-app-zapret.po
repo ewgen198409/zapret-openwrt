@@ -637,3 +637,28 @@ msgstr "Терминальное окно для запуска blockcheck.sh д
 
 msgid "Blockcheck"
 msgstr "Blockcheck"
+
+msgid "ZapretManager"
+msgstr "ZapretManager"
+
+msgid "⚠ WARNING"
+msgstr "⚠ ВНИМАНИЕ"
+
+msgid "Do NOT use ZapretManager to reinstall packages! Using it to reinstall zapret, luci-app-zapret, or other related packages will break the currently installed version and LuCI integration."
+msgstr "НЕ используйте ZapretManager для переустановки пакетов! Использование его для переустановки zapret, luci-app-zapret или других связанных пакетов нарушит работу установленной версии и интеграции LuCI."
+
+msgid "Use the Update function in the Updater tab in LuCI instead. ZapretManager is for testing DPI bypass strategies only."
+msgstr "Используйте функцию Update во вкладке Updater в LuCI. ZapretManager предназначен только для тестирования стратегий обхода DPI."
+
+msgid "Command copied to clipboard:"
+msgstr "Команда скопирована в буфер обмена:"
+
+msgid "The command has been copied. Paste it in the terminal below and press Enter to run ZapretManager."
+msgstr "Команда была скопирована. Вставьте её в терминал ниже и нажмите Enter для запуска ZapretManager."
+
+msgid "The script will download and execute ZapretManager directly in your terminal window."
+msgstr "Скрипт загрузит и выполнит ZapretManager прямо в вашем окне терминала."
+
+
+msgid "Copy and Close"
+msgstr "Копировать и закрыть"

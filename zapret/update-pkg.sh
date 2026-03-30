@@ -631,6 +631,32 @@ if [ "$opt_update" != "" ]; then
 	if [ "$opt_forced" = true ]; then
 		pkg_mgr_update
 	fi
+	
+	# BEFORE uninstalling optional packages, detect which ones are currently installed
+	# (we need to know this before removing them for update mode)
+	DETECTED_EXTRA_PKGS=
+	if [ "$opt_forced" != "true" ]; then
+		# Update mode: detect all optional packages that are currently installed
+		if [ -n "$REL_EXTRA_PKG_LIST" ]; then
+			old_ifs="$IFS"; IFS=','
+			for extra_pkg in $REL_EXTRA_PKG_LIST; do
+				IFS="$old_ifs"
+				extra_pkg=$( echo "$extra_pkg" | tr -d ' \t\r\n' )
+				[ -z "$extra_pkg" ] && continue
+				if check_pkg_installed "$extra_pkg"; then
+					# Package is installed - remember it for later reinstall
+					if [ -n "$DETECTED_EXTRA_PKGS" ]; then
+						DETECTED_EXTRA_PKGS="$DETECTED_EXTRA_PKGS,$extra_pkg"
+					else
+						DETECTED_EXTRA_PKGS="$extra_pkg"
+					fi
+				fi
+				old_ifs="$IFS"; IFS=','
+			done
+			IFS="$old_ifs"
+		fi
+	fi
+	
 	if check_pkg_installed ${ZAPRET_CFG_NAME}-mdig; then
 		echo "Uninstall mdig..."
 		${PKG_REMOVE} ${ZAPRET_CFG_NAME}-mdig
@@ -646,23 +672,9 @@ if [ "$opt_update" != "" ]; then
 		# Forced reinstall mode: use user-selected optional packages
 		EXTRA_TARGET_LIST="$opt_extra"
 	else
-		# Update mode: update only optional packages that are already installed
-		if [ -n "$REL_EXTRA_PKG_LIST" ]; then
-			old_ifs="$IFS"; IFS=','
-			for extra_pkg in $REL_EXTRA_PKG_LIST; do
-				IFS="$old_ifs"
-				extra_pkg=$( echo "$extra_pkg" | tr -d ' \t\r\n' )
-				[ -z "$extra_pkg" ] && continue
-				if check_pkg_installed "$extra_pkg"; then
-					if [ -n "$EXTRA_TARGET_LIST" ]; then
-						EXTRA_TARGET_LIST="$EXTRA_TARGET_LIST,$extra_pkg"
-					else
-						EXTRA_TARGET_LIST="$extra_pkg"
-					fi
-				fi
-				old_ifs="$IFS"; IFS=','
-			done
-			IFS="$old_ifs"
+		# Update mode: use previously detected installed optional packages
+		if [ -n "$DETECTED_EXTRA_PKGS" ]; then
+			EXTRA_TARGET_LIST="$DETECTED_EXTRA_PKGS"
 		fi
 	fi
 

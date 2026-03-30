@@ -4,6 +4,48 @@
 'require view.zapret.tools';
 
 return view.extend({
+    launchZapretManager: function() {
+        var cmd = 'wget -O /tmp/Zapret-Manager.sh https://raw.githubusercontent.com/StressOzz/Zapret-Manager/main/Zapret-Manager.sh && sh /tmp/Zapret-Manager.sh';
+        
+        // Копируем команду в буфер обмена
+        var textArea = document.createElement('textarea');
+        textArea.value = cmd;
+        document.body.appendChild(textArea);
+        textArea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textArea);
+        
+        // Показываем модальное окно с инструкциями
+        ui.showModal(_('ZapretManager'), [
+            E('div', { 'style': 'padding: 20px;' }, [
+                E('div', { 'style': 'background: #fff3cd; border: 1px solid #ffc107; border-radius: 4px; padding: 12px; margin-bottom: 15px;' }, [
+                    E('strong', {}, _('⚠ WARNING')),
+                    E('p', { 'style': 'margin: 8px 0 0 0; color: #856404;' }, _('Do NOT use ZapretManager to reinstall packages! Using it to reinstall zapret, luci-app-zapret, or other related packages will break the currently installed version and LuCI integration.')),
+                    E('p', { 'style': 'margin: 8px 0 0 0; color: #856404;' }, _('Use the Update function in the Updater tab in LuCI instead. ZapretManager is for testing DPI bypass strategies only.'))
+                ]),
+                E('p', {}, _('Command copied to clipboard:')),
+                E('pre', { 'style': 'background: #f5f5f5; padding: 10px; border-radius: 4px; overflow-x: auto;' }, cmd),
+                E('p', {}, _('The command has been copied. Paste it in the terminal below and press Enter to run ZapretManager.')),
+                E('p', { 'style': 'color: #666; font-size: 12px;' }, _('The script will download and execute ZapretManager directly in your terminal window.'))
+            ]),
+            E('div', { 'class': 'right' }, [
+                E('button', {
+                    'class': 'cbi-button cbi-button-positive',
+                    'click': function() {
+                        // Копируем еще раз при клике на Close
+                        var textArea = document.createElement('textarea');
+                        textArea.value = cmd;
+                        document.body.appendChild(textArea);
+                        textArea.select();
+                        document.execCommand('copy');
+                        document.body.removeChild(textArea);
+                        ui.hideModal();
+                    },
+                }, _('Copy and Close')),
+            ])
+        ]);
+    },
+
     showCreateCommand: function() {
         var commandText = E('textarea', {
             'id': 'command_output',
@@ -258,6 +300,11 @@ return view.extend({
             'click': ui.createHandlerFn(this, this.showCreateCommand),
         }, _('Create command'));
 
+        var zapretManagerButton = E('button', {
+            'class': 'cbi-button cbi-button-positive',
+            'click': ui.createHandlerFn(this, this.launchZapretManager),
+        }, _('ZapretManager'));
+
         var terminalIframe = E('iframe', {
             'src': 'http://' + window.location.hostname + ':7681/?arg=/bin/bash',
             'style': 'width:100%; height:70vh; border:1px solid #ccc; resize: both; opacity: 0.65;',
@@ -271,7 +318,9 @@ return view.extend({
                 E('div', { 'style': 'margin-bottom: 10px;' }, [
                     helpButton,
                     ' ',
-                    createCommandButton
+                    createCommandButton,
+                    ' ',
+                    zapretManagerButton
                 ]),
                 terminalIframe
             ])

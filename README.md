@@ -86,6 +86,7 @@
 
 ## Благодарности
 
+- ZapretManager [ZapretManager](https://github.com/StressOzz/Zapret-Manager)
 - Оригинальный проект [Zapret](https://github.com/bol-van/zapret)
 - Проект [remittor/zapret-openwrt](https://github.com/remittor/zapret-openwrt)
 - Сообщество OpenWrt

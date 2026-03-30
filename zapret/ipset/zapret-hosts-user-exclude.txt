@@ -13,7 +13,7 @@ voidboost.cc
 akamaihd.net
 amazonaws.com
 akamaized.net
-################## ip-tv
+############### OnlineTV
 cdntv.online
 #################################### VK
 vk.com
@@ -267,6 +267,8 @@ playdeltaforce.com
 quovadisglobal.com
 jupiterlauncher.com
 anticheatexpert.com
+download.windowsupdate.com
+legacyupdate.net
 #################################### Microsoft
 live.com
 lync.com
