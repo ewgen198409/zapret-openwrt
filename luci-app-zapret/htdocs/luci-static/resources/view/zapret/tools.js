@@ -241,50 +241,98 @@ return baseclass.extend({
         // opts: { cmd: [], log: 'path', logArea: element, callback: func, ctx: this, hiderow: regex }
         let cmd = opts.cmd;
         let log_file = opts.log;
+        let rc_file = log_file + '.rc';
         let logArea = opts.logArea;
         let callback = opts.callback || null;
         let ctx = opts.ctx || this;
         let hiderow = opts.hiderow || null;
+        let poll_ms = opts.poll_ms || 1000;
+        let max_polls = opts.max_polls || 1200; // ~20 minutes by default
         
-        // Build shell command to redirect output to log file
+        // Build shell command
         let full_cmd = cmd.map(s => {
             // Escape arguments that may contain spaces
             return (s.includes(' ') || s.includes('"') || s.includes("'")) ? JSON.stringify(s) : s;
-        }).join(' ') + ' > ' + log_file + ' 2>&1';
-        
-        // Execute the command
-        return fs.exec('/bin/sh', [ '-c', full_cmd ]).then(res => {
-            // Read the log file
-            return fs.read(log_file).then(log_content => {
-                // Apply hiderow filter if provided
-                if (hiderow && log_content) {
-                    log_content = log_content.replace(hiderow, '');
-                }
-                
-                // Update logArea with content
-                if (logArea) {
-                    logArea.value = log_content;
-                    logArea.scrollTop = logArea.scrollHeight;
-                }
-                
-                // Call the callback with return code and content
-                if (callback && typeof callback === 'function') {
-                    return callback.call(ctx, res.code, log_content);
-                }
-                
-                return res.code;
-            }).catch(e => {
-                // If log file read fails, still pass the error to callback
-                let error_msg = 'ERROR: Failed to read log file: ' + e.message;
-                if (logArea) {
-                    logArea.value += error_msg + '\n';
-                }
-                if (callback && typeof callback === 'function') {
-                    return callback.call(ctx, 127, error_msg);
-                }
-                throw e;
+        }).join(' ');
+
+        // Run command in detached background shell and write return code to rc_file,
+        // then poll log/rc files to avoid XHR timeout on long operations.
+        let worker_cmd = `${full_cmd} > ${log_file} 2>&1; echo $? > ${rc_file}`;
+        let start_cmd = `rm -f ${rc_file}; : > ${log_file}; /bin/sh -c ${JSON.stringify(worker_cmd)} >/dev/null 2>&1 &`;
+
+        let pollCommandOutput = function(resolve) {
+            let polls = 0;
+            let poll_fn = () => {
+                Promise.all([
+                    fs.read(log_file).catch(() => ''),
+                    fs.read(rc_file).catch(() => null),
+                ]).then(([log_content, rc_content]) => {
+                    if (hiderow && log_content) {
+                        log_content = log_content.replace(hiderow, '');
+                    }
+                    if (logArea) {
+                        logArea.value = log_content || '';
+                        logArea.scrollTop = logArea.scrollHeight;
+                    }
+
+                    if (rc_content !== null && rc_content !== undefined) {
+                        let rc = parseInt(('' + rc_content).trim(), 10);
+                        if (isNaN(rc)) {
+                            rc = 1;
+                        }
+                        fs.remove(rc_file).catch(() => {});
+                        if (callback && typeof callback === 'function') {
+                            resolve(callback.call(ctx, rc, log_content || ''));
+                        } else {
+                            resolve(rc);
+                        }
+                        return;
+                    }
+
+                    polls++;
+                    if (polls >= max_polls) {
+                        let error_msg = 'ERROR: Command execution polling timeout';
+                        let out = (log_content || '') + ((log_content && log_content.length) ? '\n' : '') + error_msg;
+                        if (logArea) {
+                            logArea.value = out + '\n';
+                            logArea.scrollTop = logArea.scrollHeight;
+                        }
+                        if (callback && typeof callback === 'function') {
+                            resolve(callback.call(ctx, 1, out));
+                        } else {
+                            resolve(1);
+                        }
+                        return;
+                    }
+
+                    setTimeout(poll_fn, poll_ms);
+                }).catch(e => {
+                    let error_msg = 'ERROR: Failed while polling command output: ' + e.message;
+                    if (logArea) {
+                        logArea.value += error_msg + '\n';
+                        logArea.scrollTop = logArea.scrollHeight;
+                    }
+                    if (callback && typeof callback === 'function') {
+                        resolve(callback.call(ctx, 127, error_msg));
+                    } else {
+                        resolve(127);
+                    }
+                });
+            };
+            poll_fn();
+        };
+
+        return fs.exec('/bin/sh', [ '-c', start_cmd ]).then(res => {
+            return new Promise((resolve) => {
+                pollCommandOutput(resolve);
             });
         }).catch(e => {
+            // Some rpcd backends may report timeout even when background shell started.
+            if (e && ('' + e.message).toLowerCase().includes('timed out')) {
+                return new Promise((resolve) => {
+                    pollCommandOutput(resolve);
+                });
+            }
             // Command execution failed
             let error_msg = 'ERROR: Command execution failed: ' + e.message;
             if (logArea) {

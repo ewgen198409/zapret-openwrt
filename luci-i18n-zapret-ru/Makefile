@@ -5,7 +5,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=luci-i18n-zapret-ru
-PKG_VERSION:=72.20260329
+PKG_VERSION:=72.20260330
 PKG_RELEASE:=1
 PKG_LICENSE:=MIT
 PKG_MAINTAINER:=remittor <https://github.com/remittor>

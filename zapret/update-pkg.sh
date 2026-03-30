@@ -7,13 +7,15 @@ opt_check=
 opt_prerelease=
 opt_update=
 opt_forced=
+opt_extra=
 opt_test=
 
-while getopts "cu:pft:" opt; do
+while getopts "cu:e:pft:" opt; do
 	case $opt in
 		c) opt_check=true;;
 		p) opt_prerelease="true";;
 		u) opt_update="$OPTARG";;
+		e) opt_extra="$OPTARG";;
 		f) opt_forced="true";;
 		t) opt_test="$OPTARG";;
 	esac
@@ -53,6 +55,9 @@ REL_ACTUAL_TAG=
 REL_ACTUAL_PRE=
 REL_ACTUAL_URL=
 REL_ACTUAL_LUCI_URL=
+REL_EXTRA_PKG_LIST=
+REL_EXTRA_PKG_ASSETS=
+OPT_RELEASE_TAG=
 
 ZAP_OUT=
 ZAP_ERR=
@@ -221,7 +226,7 @@ function pkg_version_cmp
 
 function download_releases_info
 {
-	local fname resp hdr txt txtlen txtlines generated_at
+	local fname resp hdr txt txtlen txtlines
 	REL_JSON=
 	
 	echo "Download releases info from GitHub API..."
@@ -248,62 +253,39 @@ function download_releases_info
 		return 104
 	fi
 	
-	# Convert GitHub API response to our JSON format
-	# Extract first release with its tag_name (handle both with and without spaces around colon)
 	local first_tag=$(echo "$txt" | grep -o '"tag_name"[[:space:]]*:[[:space:]]*"[^"]*"' | head -1 | sed 's/.*"\([^"]*\)".*/\1/')
-	local first_prerel=$(echo "$txt" | grep -A 5 "\"tag_name\"" | grep '"prerelease"' | grep -o 'false\|true' | head -1)
-	local generated_at=$(date -u +'%Y-%m-%dT%H:%M:%SZ')
-	
 	if [ -z "$first_tag" ]; then
 		echo "ERROR: Cannot download releases info! (no releases found)"
 		return 105
 	fi
-	
-	# Extract real download URLs from API response for this architecture
-	# Look for zapret package matching our architecture
-	local zapret_asset=$(echo "$txt" | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*zapret_[^"]*_'"${ZAP_CPU_ARCH}"'\.ipk[^"]*"' | head -1 | cut -d'"' -f4)
-	
-	# If not found with arch-specific pattern, try generic pattern (some releases may have different naming)
-	if [ -z "$zapret_asset" ]; then
-		zapret_asset=$(echo "$txt" | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*zapret[^"]*\.ipk[^"]*"' | head -1 | cut -d'"' -f4)
-	fi
-	
-	# Look for luci-app-zapret package (architecture independent, marked as 'all')
-	local luci_asset=$(echo "$txt" | grep -o '"browser_download_url"[[:space:]]*:[[:space:]]*"[^"]*luci-app-zapret[^"]*\.ipk[^"]*"' | head -1 | cut -d'"' -f4)
-	
-	# Build our expected JSON format
-	REL_JSON="{"
-	REL_JSON="${REL_JSON}\"generated_at\":\"${generated_at}\","
-	REL_JSON="${REL_JSON}\"releases\":{"
-	REL_JSON="${REL_JSON}\"0\":{"
-	REL_JSON="${REL_JSON}\"tag\":\"${first_tag}\","
-	REL_JSON="${REL_JSON}\"prerelease\":${first_prerel},"
-	REL_JSON="${REL_JSON}\"assets\":["
-	
-	if [ -n "$zapret_asset" ]; then
-		REL_JSON="${REL_JSON}{\"name\":\"zapret_${first_tag}_${ZAP_CPU_ARCH}.ipk\",\"browser_download_url\":\"${zapret_asset}\"},"
-	fi
-	
-	if [ -n "$luci_asset" ]; then
-		REL_JSON="${REL_JSON}{\"name\":\"luci-app-zapret_${first_tag}_all.ipk\",\"browser_download_url\":\"${luci_asset}\"}"
-	fi
-	
-	REL_JSON="${REL_JSON}]"
-	REL_JSON="${REL_JSON}}}}}"
+
+	# jshn works reliably with object root, so wrap API array into "releases"
+	REL_JSON="{\"releases\":$txt}"
 	
 	echo "Releases info downloaded! Size = $txtlen, Lines = $txtlines"
-	echo "First release: $first_tag (prerelease=$first_prerel)"
-	if [ -n "$zapret_asset" ]; then
-		echo "Found zapret for $ZAP_CPU_ARCH: ${zapret_asset##*/}"
-	fi
-	if [ -n "$luci_asset" ]; then
-		echo "Found luci-app-zapret: ${luci_asset##*/}"
-	fi
-	# Debug: show JSON structure
-	echo "DEBUG: REL_JSON structure:" >&2
-	echo "$REL_JSON" | head -c 200 >&2
-	echo "" >&2
+	echo "First release tag: $first_tag"
 	return 0
+}
+
+function pkg_name_from_asset
+{
+	local fname="$1"
+	local ext="$2"
+	local base pkg
+	base="${fname##*/}"
+	base="${base%.${ext}}"
+	case "$ext" in
+		ipk)
+			pkg="${base%%_*}"
+			;;
+		apk)
+			pkg=$( echo "$base" | sed -E 's/-[0-9][^-]*$//' )
+			;;
+		*)
+			pkg="${base%%_*}"
+			;;
+	esac
+	echo "$pkg"
 }
 
 function get_actual_release
@@ -313,70 +295,104 @@ function get_actual_release
 	REL_ACTUAL_PRE=
 	REL_ACTUAL_URL=
 	REL_ACTUAL_LUCI_URL=
+	REL_EXTRA_PKG_LIST=
+	REL_EXTRA_PKG_ASSETS=
 	json_load "$(printf '%s' "$REL_JSON")"
 	if [ $? -ne 0 ]; then
-		echo "ERROR: incorrect format of ${ZAP_REL_URL##*/}"
+		echo "ERROR: incorrect GitHub API response format"
 		json_cleanup
 		return 151
 	fi
+	
 	json_select releases
 	if [ $? -ne 0 ]; then
-		echo "ERROR: incorrect format of ${ZAP_REL_URL##*/}"
+		echo "ERROR: incorrect GitHub API response format: no releases"
 		json_cleanup
 		return 157
 	fi
+
+	# releases is an array of release objects
 	json_get_keys idx_list
-	# array already sorted by created_at => take first elem
+	# API already sorted by created_at desc => take first suitable release
 	for rel_id in $idx_list; do
-		json_select "$rel_id"   # enter into releases[rel_id]
-		json_get_var tag tag
+		json_select "$rel_id"
+		json_get_var tag tag_name
 		json_get_var pre prerelease
-		if [ "$opt_prerelease" != "true" ] && [ "$pre" = "1" ]; then
-			json_select ..   # exit from releases[rel_id]
+		if [ -n "$OPT_RELEASE_TAG" ] && [ "$tag" != "$OPT_RELEASE_TAG" ]; then
+			json_select ..
+			continue
+		fi
+		if [ -z "$OPT_RELEASE_TAG" ] && [ "$opt_prerelease" != "true" ] && [ "$pre" = "1" ]; then
+			json_select ..
 			continue
 		fi
 		json_select assets
 		if [ $? -ne 0 ]; then
-			echo "ERROR: release[$rel_id] has not include 'assets'"
+			echo "ERROR: release[$rel_id] has no 'assets'"
 			json_cleanup
 			return 160
 		fi
 		
-		# Get all assets (zapret and luci-app-zapret)
-		local asset_idx=1
-		while true; do
-			json_select "$asset_idx" > /dev/null 2>&1
-			if [ $? -ne 0 ]; then
-				break  # No more assets
-			fi
-			
-			local asset_url asset_name
+		local asset_idx_list asset_id
+		json_get_keys asset_idx_list
+		for asset_id in $asset_idx_list; do
+			json_select "$asset_id"
+			local asset_url asset_name pkg_name
 			json_get_var asset_name name
 			json_get_var asset_url browser_download_url
-			
-			# Check what type of asset this is
+			pkg_name=$( pkg_name_from_asset "$asset_name" "$ZAP_PKG_EXT" )
+
+			# keep only current arch/all package files
 			case "$asset_name" in
-				*"luci-app"*)
-					REL_ACTUAL_LUCI_URL="$asset_url"
-					;;
+				*.${ZAP_PKG_EXT}) ;;
 				*)
-					if [ -z "$REL_ACTUAL_URL" ]; then
-						REL_ACTUAL_URL="$asset_url"
-					fi
+					json_select ..
+					continue
+					;;
+			esac
+			case "$asset_name" in
+				*"_""${ZAP_CPU_ARCH}"".""${ZAP_PKG_EXT}"|*"_all.""${ZAP_PKG_EXT}") ;;
+				*)
+					json_select ..
+					continue
 					;;
 			esac
 			
-			json_select ..  # back to assets
-			asset_idx=$((asset_idx + 1))
+			case "$pkg_name" in
+				"$ZAPRET_CFG_NAME")
+					[ -z "$REL_ACTUAL_URL" ] && REL_ACTUAL_URL="$asset_url"
+					;;
+				"luci-app-$ZAPRET_CFG_NAME")
+					REL_ACTUAL_LUCI_URL="$asset_url"
+					;;
+				"luci-i18n-$ZAPRET_CFG_NAME"-*)
+					if [ -n "$REL_EXTRA_PKG_LIST" ]; then
+						REL_EXTRA_PKG_LIST="$REL_EXTRA_PKG_LIST,$pkg_name"
+					else
+						REL_EXTRA_PKG_LIST="$pkg_name"
+					fi
+					REL_EXTRA_PKG_ASSETS="${REL_EXTRA_PKG_ASSETS}${pkg_name}|${asset_url}\n"
+					;;
+				"$ZAPRET_CFG_NAME"-*)
+					if [ -n "$REL_EXTRA_PKG_LIST" ]; then
+						REL_EXTRA_PKG_LIST="$REL_EXTRA_PKG_LIST,$pkg_name"
+					else
+						REL_EXTRA_PKG_LIST="$pkg_name"
+					fi
+					REL_EXTRA_PKG_ASSETS="${REL_EXTRA_PKG_ASSETS}${pkg_name}|${asset_url}\n"
+					;;
+			esac
+			
+			json_select ..
 		done
 		
-		json_select ..  # exit from assets
-		json_select ..  # exit from releases[rel_id]
+		json_select ..
+		json_select ..
 		json_cleanup
 		REL_ACTUAL_TAG="$tag"
 		REL_ACTUAL_PRE="$pre"
-		# Debug output
 		echo "DEBUG: REL_ACTUAL_TAG='$REL_ACTUAL_TAG' REL_ACTUAL_URL='$REL_ACTUAL_URL' REL_ACTUAL_LUCI_URL='$REL_ACTUAL_LUCI_URL'" >&2
+		echo "DEBUG: REL_EXTRA_PKG_LIST='$REL_EXTRA_PKG_LIST'" >&2
 		return 0
 	done
 	json_cleanup
@@ -393,6 +409,12 @@ fi
 
 if [ "$opt_update" = "@" ]; then
 	opt_check="true"
+fi
+
+if [ "$opt_update" != "" ] && [ "$opt_update" != "@" ]; then
+	# Example URL: .../releases/download/v72.20260329/zapret_72.20260329_mipsel_24kc.ipk
+	# Need exact release to resolve optional assets for selected version
+	OPT_RELEASE_TAG=$( echo "$opt_update" | sed -n 's|.*/releases/download/\([^/]*\)/.*|\1|p' )
 fi
 
 #echo "DISTRIB_ID: $DISTRIB_ID"
@@ -439,6 +461,12 @@ if [ "$opt_check" = "true" ]; then
 	fi
 	echo "Latest package version: $REL_ACTUAL_TAG"
 	echo "Latest package url: $REL_ACTUAL_URL"
+	echo "EXTRA_PKG_AVAILABLE = $REL_EXTRA_PKG_LIST"
+	if [ -n "$REL_EXTRA_PKG_ASSETS" ]; then
+		echo "EXTRA_PKG_ASSETS_BEGIN"
+		printf '%b' "$REL_EXTRA_PKG_ASSETS"
+		echo "EXTRA_PKG_ASSETS_END"
+	fi
 elif [ "$opt_update" = "@" ]; then
 	# When updating to latest (@), we need to get release info from GitHub API
 	download_releases_info
@@ -460,6 +488,15 @@ elif [ "$opt_update" = "@" ]; then
 	fi
 	echo "Latest package version: $REL_ACTUAL_TAG"
 	echo "Latest package url: $REL_ACTUAL_URL"
+fi
+
+if [ "$opt_update" != "" ] && [ "$opt_update" != "@" ]; then
+	# Also resolve release assets (luci + optional packages) for selected release
+	download_releases_info
+	ZAP_ERR=$?
+	if [ $ZAP_ERR -eq 0 ]; then
+		get_actual_release >/dev/null 2>&1
+	fi
 fi
 
 ZAP_PKG_SIZE=
@@ -548,14 +585,14 @@ if [ "$opt_update" != "" ]; then
 		echo "ERROR: cannot download ${ZAP_PKG_FILE}!"
 		return 215
 	fi
+	release_dir="${ZAP_PKG_URL%/*}"
 	
 	# For luci-app-zapret: if we got it from GitHub API, we have the direct URL
 	# Otherwise find it from release page
 	if [ -n "$REL_ACTUAL_LUCI_URL" ]; then
 		LUCI_PKG_URL="$REL_ACTUAL_LUCI_URL"
 	else
-		# Extract directory from ZAP_PKG_URL and try to find luci package
-		release_dir="${ZAP_PKG_URL%/*}"
+		# Try to find luci package near base package URL
 		LUCI_PKG_URL=$(curl -s "$release_dir/" 2>/dev/null | grep -o "href=\"[^\"]*luci-app-${ZAPRET_CFG_NAME}[^\"]*\.${ZAP_PKG_EXT}[^\"]*\"" | head -1 | cut -d'"' -f2 | awk '{print $1}')
 		if [ -z "$LUCI_PKG_URL" ]; then
         # Fallback: try common naming pattern
@@ -603,6 +640,149 @@ if [ "$opt_update" != "" ]; then
 		${PKG_REMOVE} ${ZAPRET_CFG_NAME}-ip2net
 	fi
 	echo "Install downloaded packages..."
+	EXTRA_INSTALL_LIST=
+	EXTRA_TARGET_LIST=
+	if [ "$opt_forced" = "true" ]; then
+		# Forced reinstall mode: use user-selected optional packages
+		EXTRA_TARGET_LIST="$opt_extra"
+	else
+		# Update mode: update only optional packages that are already installed
+		if [ -n "$REL_EXTRA_PKG_LIST" ]; then
+			old_ifs="$IFS"; IFS=','
+			for extra_pkg in $REL_EXTRA_PKG_LIST; do
+				IFS="$old_ifs"
+				extra_pkg=$( echo "$extra_pkg" | tr -d ' \t\r\n' )
+				[ -z "$extra_pkg" ] && continue
+				if check_pkg_installed "$extra_pkg"; then
+					if [ -n "$EXTRA_TARGET_LIST" ]; then
+						EXTRA_TARGET_LIST="$EXTRA_TARGET_LIST,$extra_pkg"
+					else
+						EXTRA_TARGET_LIST="$extra_pkg"
+					fi
+				fi
+				old_ifs="$IFS"; IFS=','
+			done
+			IFS="$old_ifs"
+		fi
+	fi
+
+	echo "DEBUG: OPT_EXTRA='$opt_extra' EXTRA_TARGET_LIST='$EXTRA_TARGET_LIST' REL_EXTRA_PKG_LIST='$REL_EXTRA_PKG_LIST'" >&2
+	if [ -n "$EXTRA_TARGET_LIST" ]; then
+		old_ifs="$IFS"; IFS=','
+		for extra_pkg in $EXTRA_TARGET_LIST; do
+			IFS="$old_ifs"
+			extra_pkg=$( echo "$extra_pkg" | tr -d ' \t\r\n' )
+			[ -z "$extra_pkg" ] && continue
+
+			# 1) Prefer URLs from selected release directory (same tag as base package)
+			for cand_url in \
+				"${release_dir}/${extra_pkg}_${ZAP_PKG_ZIP_VER}_${ZAP_CPU_ARCH}.${ZAP_PKG_EXT}" \
+				"${release_dir}/${extra_pkg}_${ZAP_PKG_ZIP_VER}-r1_all.${ZAP_PKG_EXT}" \
+				"${release_dir}/${extra_pkg}_${ZAP_PKG_ZIP_VER}_all.${ZAP_PKG_EXT}"
+			do
+				http_code=$( curl -s -L -o /dev/null --max-time 20 -w '%{http_code}' "$cand_url" )
+				echo "DEBUG: probe optional '$extra_pkg' => $cand_url [HTTP:$http_code]" >&2
+				if [ "$http_code" = "200" ]; then
+					extra_url="$cand_url"
+					break
+				fi
+			done
+
+			# 2) Fallback to URL map from GitHub API parsing
+			if [ -z "$extra_url" ]; then
+				extra_url=$( printf '%b' "$REL_EXTRA_PKG_ASSETS" | grep -m1 "^${extra_pkg}|" | cut -d'|' -f2- )
+			fi
+			if [ -z "$extra_url" ]; then
+				echo "WARNING: extra package '$extra_pkg' not found in release assets, skipping"
+			else
+				extra_file="${extra_url##*/}"
+				echo "Downloading optional package $extra_pkg from $extra_url..."
+				curl -s -L --retry 3 --retry-delay 1 --max-time 60 -H "$CURL_HEADER2" \
+					"${extra_url}" -o "$ZAP_PKG_DIR/$extra_file"
+				if [ $? -ne 0 ]; then
+					echo "WARNING: cannot download optional package '$extra_pkg', skipping"
+				else
+					if [ -n "$EXTRA_INSTALL_LIST" ]; then
+						EXTRA_INSTALL_LIST="$EXTRA_INSTALL_LIST,$extra_pkg"
+					else
+						EXTRA_INSTALL_LIST="$extra_pkg"
+					fi
+				fi
+			fi
+			old_ifs="$IFS"; IFS=','
+		done
+		IFS="$old_ifs"
+	fi
+
+	echo "DEBUG: EXTRA_INSTALL_LIST='$EXTRA_INSTALL_LIST'" >&2
+	EXTRA_INSTALL_NONLUCI=
+	EXTRA_INSTALL_LUCI=
+	if [ -n "$EXTRA_INSTALL_LIST" ]; then
+		old_ifs="$IFS"; IFS=','
+		for extra_pkg in $EXTRA_INSTALL_LIST; do
+			IFS="$old_ifs"
+			extra_pkg=$( echo "$extra_pkg" | tr -d ' \t\r\n' )
+			[ -z "$extra_pkg" ] && continue
+			case "$extra_pkg" in
+				luci-*)
+					if [ -n "$EXTRA_INSTALL_LUCI" ]; then
+						EXTRA_INSTALL_LUCI="$EXTRA_INSTALL_LUCI,$extra_pkg"
+					else
+						EXTRA_INSTALL_LUCI="$extra_pkg"
+					fi
+					;;
+				*)
+					if [ -n "$EXTRA_INSTALL_NONLUCI" ]; then
+						EXTRA_INSTALL_NONLUCI="$EXTRA_INSTALL_NONLUCI,$extra_pkg"
+					else
+						EXTRA_INSTALL_NONLUCI="$extra_pkg"
+					fi
+					;;
+			esac
+			old_ifs="$IFS"; IFS=','
+		done
+		IFS="$old_ifs"
+	fi
+	echo "DEBUG: EXTRA_INSTALL_NONLUCI='$EXTRA_INSTALL_NONLUCI'" >&2
+	echo "DEBUG: EXTRA_INSTALL_LUCI='$EXTRA_INSTALL_LUCI'" >&2
+
+	EXTRA_NONLUCI_FNS=
+	EXTRA_LUCI_FNS=
+
+	# Resolve non-LuCI optional package files
+	if [ -n "$EXTRA_INSTALL_NONLUCI" ]; then
+		old_ifs="$IFS"; IFS=','
+		for extra_pkg in $EXTRA_INSTALL_NONLUCI; do
+			IFS="$old_ifs"
+			extra_pkg=$( echo "$extra_pkg" | tr -d ' \t\r\n' )
+			[ -z "$extra_pkg" ] && continue
+			extra_pkg_fn=$( find "$ZAP_PKG_DIR" -maxdepth 1 -type f -name "${extra_pkg}*.${ZAP_PKG_EXT}" | head -n 1 )
+			if [ ! -f "$extra_pkg_fn" ]; then
+				echo "WARNING: optional package file not found for '$extra_pkg', skipping"
+			else
+				if [ -n "$EXTRA_NONLUCI_FNS" ]; then
+					EXTRA_NONLUCI_FNS="$EXTRA_NONLUCI_FNS $extra_pkg_fn"
+				else
+					EXTRA_NONLUCI_FNS="$extra_pkg_fn"
+				fi
+			fi
+			old_ifs="$IFS"; IFS=','
+		done
+		IFS="$old_ifs"
+	fi
+	if [ -n "$EXTRA_NONLUCI_FNS" ]; then
+		echo "Install non-LuCI optional packages: $EXTRA_INSTALL_NONLUCI"
+		if [ "$PKG_MGR" != "apk" ]; then
+			opkg install --force-reinstall $EXTRA_NONLUCI_FNS
+		else
+			apk add --allow-untrusted --upgrade $EXTRA_NONLUCI_FNS
+		fi
+		if [ $? -ne 0 ]; then
+			echo "WARNING: failed to install one or more non-LuCI optional packages"
+		fi
+	fi
+
+	# Install core package after optional packages
 	if [ "$PKG_MGR" != "apk" ]; then
 		opkg install --force-reinstall "$ZAP_PKG_BASE_FN"
 	else
@@ -612,6 +792,41 @@ if [ "$opt_update" != "" ]; then
 		echo "ERROR: Failed to install package $ZAP_PKG_BASE_FN"
 		return 245
 	fi
+
+	# Resolve LuCI-related optional package files after core package
+	if [ -n "$EXTRA_INSTALL_LUCI" ]; then
+		old_ifs="$IFS"; IFS=','
+		for extra_pkg in $EXTRA_INSTALL_LUCI; do
+			IFS="$old_ifs"
+			extra_pkg=$( echo "$extra_pkg" | tr -d ' \t\r\n' )
+			[ -z "$extra_pkg" ] && continue
+			extra_pkg_fn=$( find "$ZAP_PKG_DIR" -maxdepth 1 -type f -name "${extra_pkg}*.${ZAP_PKG_EXT}" | head -n 1 )
+			if [ ! -f "$extra_pkg_fn" ]; then
+				echo "WARNING: optional package file not found for '$extra_pkg', skipping"
+			else
+				if [ -n "$EXTRA_LUCI_FNS" ]; then
+					EXTRA_LUCI_FNS="$EXTRA_LUCI_FNS $extra_pkg_fn"
+				else
+					EXTRA_LUCI_FNS="$extra_pkg_fn"
+				fi
+			fi
+			old_ifs="$IFS"; IFS=','
+		done
+		IFS="$old_ifs"
+	fi
+	if [ -n "$EXTRA_LUCI_FNS" ]; then
+		echo "Install LuCI optional packages: $EXTRA_INSTALL_LUCI"
+		if [ "$PKG_MGR" != "apk" ]; then
+			opkg install --force-reinstall $EXTRA_LUCI_FNS
+		else
+			apk add --allow-untrusted --upgrade $EXTRA_LUCI_FNS
+		fi
+		if [ $? -ne 0 ]; then
+			echo "WARNING: failed to install one or more LuCI optional packages"
+		fi
+	fi
+
+	# Install LuCI package last (may interrupt active LuCI session)
 	if [ "$PKG_MGR" != "apk" ]; then
 		opkg install --force-reinstall "$ZAP_PKG_LUCI_FN"
 	else
@@ -621,5 +836,9 @@ if [ "$opt_update" != "" ]; then
 		echo "ERROR: Failed to install package $ZAP_PKG_LUCI_FN"
 		return 247
 	fi
+
+	# Cleanup temporary downloaded packages directory after successful installation
+	rm -rf "$ZAP_PKG_DIR" 2>/dev/null
+	echo "Temporary directory removed: $ZAP_PKG_DIR"
 	echo "RESULT: (+) Packages successfully installed!"
 fi

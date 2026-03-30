@@ -58,11 +58,9 @@ return view.extend({
                     E('label', { 'for': 'domains_input' }, _('Domains (space separated):')),
                     domainsInput
                 ]),
-                E('div', { 'style': 'margin-bottom: 10px; display:flex; align-items:center;' }, [
+                E('div', { 'style': 'margin-bottom: 10px; display:flex; align-items:center; gap:10px;' }, [
                     testButton,
-                    ' ',
                     autoTestButton,
-                    ' ',
                     clearButton,
                     progressWrap
                 ]),

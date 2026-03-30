@@ -23,14 +23,8 @@ msgstr "Не удалось получить файлы логов"
 msgid "Unable to execute or read contents"
 msgstr "Не удалось выполнить или прочитать содержимое"
 
-msgid "Unable to get log files"
-msgstr "Не удалось получить файлы логов"
-
 msgid "Unable to read the contents"
 msgstr "Не удалось прочитать содержимое"
-
-msgid "Unable to get log files"
-msgstr "Не удалось получить файлы логов"
 
 msgid "Zapret"
 msgstr "Zapret"
@@ -52,6 +46,24 @@ msgstr "Проверка обновлений..."
 
 msgid "Install updates..."
 msgstr "Установка обновлений..."
+
+msgid "Installing packages..."
+msgstr "Установка пакетов..."
+
+msgid "Selected optional packages: "
+msgstr "Выбранные дополнительные пакеты: "
+
+msgid "Optional packages not selected"
+msgstr "Дополнительные пакеты не выбраны"
+
+msgid "Optional packages available: "
+msgstr "Доступные дополнительные пакеты: "
+
+msgid "Optional additional packages"
+msgstr "Дополнительные пакеты"
+
+msgid "Reinstall"
+msgstr "Переустановить"
 
 msgid "Latest version already installed. Use \"Forced reinstall\" to reinstall."
 msgstr "Последняя версия уже установлена. Используйте \"Принудительную переустановку\" для переустановки."
@@ -155,12 +167,6 @@ msgstr "Не удалось сохранить содержимое"
 msgid "Loading"
 msgstr "Загрузка"
 
-msgid "Unable to read the contents"
-msgstr "Не удалось прочитать содержимое"
-
-msgid "Unable to execute or read contents"
-msgstr "Не удалось выполнить или прочитать содержимое"
-
 msgid "Unable to read the service info"
 msgstr "Не удалось прочитать информацию о службе"
 
@@ -169,9 +175,6 @@ msgstr "Не удалось прочитать список процессов"
 
 msgid "Unable to enumerate installed packages"
 msgstr "Не удалось перечислить установленные пакеты"
-
-msgid "Error"
-msgstr "Ошибка"
 
 msgid "Unable to run service action."
 msgstr "Не удалось запустить действие службы."
@@ -259,9 +262,6 @@ msgstr "Домены не введены."
 
 msgid "Stop Test"
 msgstr "Остановить тест"
-
-msgid "Auto Test"
-msgstr "Авто тест"
 
 msgid "Test stopped by user.\n"
 msgstr "Тест остановлен пользователем.\n"

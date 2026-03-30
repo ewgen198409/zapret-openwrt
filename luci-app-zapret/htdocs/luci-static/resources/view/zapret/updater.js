@@ -3,6 +3,7 @@
 'require fs';
 'require poll';
 'require uci';
+'require dom';
 'require ui';
 'require view';
 'require view.zapret.tools as tools';
@@ -18,6 +19,8 @@ const fn_update_pkg_sh   = '/opt/'+tools.appName+'/update-pkg.sh';
 
 return baseclass.extend({
     releasesUrlPrefix : 'https://raw.githubusercontent.com/ewgen198409/zapret-openwrt/gh-pages/releases/',
+    installProgressTimer: null,
+    installProgressValue: 0,
     
     appendLog: function(msg, end = '\n')
     {
@@ -40,7 +43,71 @@ return baseclass.extend({
         if (stage == 3) this.setBtnMode(0, 0, 0);
         if (stage == 8) this.setBtnMode(0, 0, 1);
         if (stage >= 9) this.setBtnMode(0, 0, 0);
+
+        if (stage == 3) {
+            this.setInstallProgressVisible(true);
+        } else if (stage == 0 || stage == 1 || stage == 2) {
+            this.setInstallProgressVisible(false);
+        }
         this.stage = stage;
+    },
+
+    setInstallProgressVisible: function(show)
+    {
+        if (!this.progressWrap) {
+            return;
+        }
+        this.progressWrap.style.display = show ? 'flex' : 'none';
+    },
+
+    setInstallProgress: function(value, text)
+    {
+        if (!this.progressBar || !this.progressLabel) {
+            return;
+        }
+        let v = Math.max(0, Math.min(100, parseInt(value, 10) || 0));
+        this.installProgressValue = v;
+        this.progressBar.value = v;
+        this.progressLabel.textContent = (text || _('Installing packages...')) + ' ' + v + '%';
+    },
+
+    updateInstallProgressFromLog: function()
+    {
+        if (!this.logArea) {
+            return;
+        }
+        let txt = this.logArea.value || '';
+        let v = this.installProgressValue || 0;
+
+        if (/Downloading\s+/m.test(txt)) v = Math.max(v, 20);
+        if (/Install downloaded packages\.\.\./m.test(txt)) v = Math.max(v, 55);
+        if (/Install non-LuCI optional packages:/m.test(txt)) v = Math.max(v, 70);
+        if (/Install LuCI optional packages:/m.test(txt)) v = Math.max(v, 80);
+        if (/Temporary directory removed:/m.test(txt)) v = Math.max(v, 95);
+        if (/RESULT:\s*\(\+\)/m.test(txt)) v = 100;
+
+        this.setInstallProgress(v);
+    },
+
+    startInstallProgressMonitor: function()
+    {
+        this.stopInstallProgressMonitor();
+        this.setInstallProgressVisible(true);
+        this.setInstallProgress(5);
+        this.installProgressTimer = setInterval(() => {
+            this.updateInstallProgressFromLog();
+        }, 700);
+    },
+
+    stopInstallProgressMonitor: function(finalizeOk)
+    {
+        if (this.installProgressTimer) {
+            clearInterval(this.installProgressTimer);
+            this.installProgressTimer = null;
+        }
+        if (finalizeOk) {
+            this.setInstallProgress(100);
+        }
     },
 
     checkUpdates: async function(ev)
@@ -48,6 +115,7 @@ return baseclass.extend({
         this._action = 'checkUpdates';
         this.setStage(1);
         this.pkg_url = null;
+        this.renderExtraPackages([]);
         this.appendLog(_('Checking for updates...'));
         let cmd = [ fn_update_pkg_sh, '-c' ];  // check for updates
         if (document.getElementById('cfg_exclude_prereleases').checked == false) {
@@ -72,8 +140,19 @@ return baseclass.extend({
         }
         this._action = 'installUpdates';
         this.setStage(3);
+        this.startInstallProgressMonitor();
         this.appendLog(_('Install updates...'));
         let cmd = [ fn_update_pkg_sh, '-u', this.pkg_url ];  // update packages
+        let selectedExtras = this.getSelectedExtraPackages();
+        if (selectedExtras.length > 0) {
+            this.appendLog(_('Selected optional packages: ') + selectedExtras.join(', '));
+        } else {
+            this.appendLog(_('Optional packages not selected'));
+        }
+        if (selectedExtras.length > 0) {
+            cmd.push('-e');
+            cmd.push(selectedExtras.join(','));
+        }
         if (document.getElementById('cfg_forced_reinstall').checked == true) {
             cmd.push('-f');  // forced reinstall if same version
         }
@@ -100,6 +179,18 @@ return baseclass.extend({
                 } else {
                     this.btn_install.textContent = _('Install');
                 }
+                let extraPackages = [];
+                let extraPkgMatch = txt.match(/^EXTRA_PKG_AVAILABLE\s*=\s*(.*)$/m);
+                if (extraPkgMatch && extraPkgMatch[1]) {
+                    extraPackages = extraPkgMatch[1]
+                        .split(',')
+                        .map(v => v.trim())
+                        .filter(v => v.length > 0);
+                }
+                this.renderExtraPackages(extraPackages);
+                if (extraPackages.length > 0) {
+                    this.appendLog(_('Optional packages available: ') + extraPackages.join(', '));
+                }
                 let pkg_url = txt.match(/^ZAP_PKG_URL\s*=\s*(.+)$/m);
                 if (code && pkg_url) {
                     // Check if versions are same (E or G codes)
@@ -124,11 +215,15 @@ return baseclass.extend({
             }
             if (this._action == 'installUpdates') {
                 if (this._test || (code && code[1] == '+')) {
+                    this.stopInstallProgressMonitor(true);
                     this.setStage(9);
                     this.appendLog('Please update WEB-page (press F5)');
                     return;
                 }
             }
+        }
+        if (this._action == 'installUpdates') {
+            this.stopInstallProgressMonitor(false);
         }
         this.setStage(0);
         if (rc >= 500) {
@@ -141,6 +236,46 @@ return baseclass.extend({
             this.appendLog('ERROR: Process finished with retcode = ' + rc);
         }
         this.appendLog('=========================================================');
+    },
+
+    getSelectedExtraPackages: function()
+    {
+        let nodes = document.querySelectorAll('#cfg_extra_pkg_list input[type="checkbox"]:checked');
+        let selected = [];
+        nodes.forEach((cb) => {
+            if (cb && cb.value && cb.value.length > 0) {
+                selected.push(cb.value);
+            }
+        });
+        return selected;
+    },
+
+    renderExtraPackages: function(pkgList)
+    {
+        if (!this.extraPkgSection || !this.extraPkgListNode) {
+            return;
+        }
+        this.extraPkgCheckboxes = [];
+        dom.content(this.extraPkgListNode, []);
+
+        if (!pkgList || pkgList.length === 0) {
+            this.extraPkgSection.style.display = 'none';
+            return;
+        }
+
+        let rows = [];
+        pkgList.forEach((pkg, idx) => {
+            let id = 'cfg_extra_pkg_' + idx;
+            let checkbox = E('input', { type: 'checkbox', id: id, value: pkg });
+            this.extraPkgCheckboxes.push(checkbox);
+            rows.push(E('label', { 'for': id, 'style': 'display:block; margin:4px 0; line-height:1.35;' }, [
+                checkbox,
+                ' ', pkg,
+            ]));
+        });
+
+        dom.content(this.extraPkgListNode, rows);
+        this.extraPkgSection.style.display = '';
     },
 
     openUpdateDialog: function(pkg_arch)
@@ -162,6 +297,14 @@ return baseclass.extend({
             E('input', { type: 'checkbox', id: 'cfg_forced_reinstall'}),
             ' ', _('Forced reinstall packages')
         ]);
+
+        this.extraPkgListNode = E('div', { 'id': 'cfg_extra_pkg_list', 'style': 'padding-left: 24px; margin-top: 6px;' });
+        this.extraPkgSection = E('div', { 'id': 'cfg_extra_pkg_section', 'style': 'display:none; margin:8px 0 10px 0;' }, [
+            E('strong', _('Optional additional packages')),
+            E('br'),
+            this.extraPkgListNode,
+        ]);
+        this.extraPkgCheckboxes = [];
 
         this.logArea = E('textarea', {
             'id': 'widget.modal_content',
@@ -201,13 +344,29 @@ return baseclass.extend({
         
         this.setStage(0);
 
+        this.progressBar = E('progress', {
+            'id': 'widget.install_progress',
+            'max': 100,
+            'value': 0,
+            'style': 'width: 220px; height: 16px;'
+        });
+        this.progressLabel = E('span', { 'style': 'font-size: 12px; white-space: nowrap;' }, _('Installing packages...') + ' 0%');
+        this.progressWrap = E('div', {
+            'id': 'widget.install_progress_wrap',
+            'style': 'display:none; flex-direction:column; align-items:center; gap:2px; min-width:240px;'
+        }, [
+            this.progressBar,
+            this.progressLabel,
+        ]);
+
         ui.showModal(_('Check for upgrades and installation'), [
             E('div', { 'class': 'cbi-section' }, [
                 exclude_prereleases,
                 E('br'), E('br'),
                 forced_reinstall,
                 E('br'), E('br'),
-                E('hr'),
+                this.extraPkgSection,
+                E('hr', { 'style': 'margin: 8px 0 10px 0;' }),
                 this.logArea,
             ]),
             E('div', { 'style': 'display:flex; justify-content:space-between; align-items:center; margin-top:1px;' }, [
@@ -216,6 +375,7 @@ return baseclass.extend({
                     ' ',
                     this.btn_install,
                 ]),
+                this.progressWrap,
                 E('div', { 'class': 'right' }, [
                     ' ',
                     this.btn_cancel,
