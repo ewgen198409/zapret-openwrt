@@ -169,28 +169,11 @@ jobs:
           if [ "${{ matrix.arch }}" = "aarch64_cortex-a53" ]; then
             TIMEOUT=150m
           fi
-          echo "SDK setup timeout: $TIMEOUT"
-          # Capture both stdout and stderr to a log file for analysis
-          timeout $TIMEOUT bash -x ./setup.sh 2>&1 | tee setup.log || {
+          timeout $TIMEOUT bash -x ./setup.sh || {
             EXIT_CODE=$?
-            echo ""
             echo "setup.sh failed with exit code: $EXIT_CODE"
-            echo ""
-            echo "=== Full setup.log content ==="
-            cat setup.log
-            echo ""
-            echo "=== Disk space ==="
-            df -h /builder || df -h
-            echo "=== /builder contents ==="
-            ls -lah /builder/ | head -30
-            echo ""
-            echo "=== Checking wget connectivity ==="
-            wget --spider https://downloads.openwrt.org/releases/24.10-SNAPSHOT/ 2>&1 | head -10 || echo "wget spider failed"
-            echo ""
             exit 1
           }
-          echo "SDK setup completed successfully"
-          ls -lh | grep -E '(bin|include|lib|staging)'
           if [ "$BRANCH" = "openwrt-24.10" ]; then
               echo "PKGTYPE=ipk" >> $GITHUB_ENV
           else
