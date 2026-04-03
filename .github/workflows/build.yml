@@ -158,17 +158,11 @@ jobs:
           sed -r -i 's/^rm.+//' setup.sh
           # force using main OpenWrt downloads host to avoid slow mirror
           sed -r -i "s/^FILE_HOST=.*/FILE_HOST=downloads.openwrt.org/" setup.sh || true
-          # make wget resumable and show progress to avoid silent long waits
-          sed -i "s/\bwget\b/wget -c --tries=3 --timeout=30 --show-progress/g" setup.sh || true
-          
-          # Debug: show what's in setup.sh for TARGET
-          echo "=== Checking setup.sh for TARGET variable ==="
-          head -20 setup.sh
-          echo "=== Grep for TARGET ==="
-          grep "^TARGET=" setup.sh || echo "TARGET not found in setup.sh"
-          echo "=== Environment variables ==="
-          env | grep -i target || echo "No TARGET in environment"
-          echo ""
+          # make wget more resilient: increase timeout and retries for large SDK files
+          # Default 30 sec timeout is too short for 200MB+ SDK archives
+          sed -i "s/\bwget\b/wget -c --tries=5 --timeout=120 --show-progress/g" setup.sh || true
+          # Also reduce verbosity to see actual errors
+          sed -i "s/ -nv / /g" setup.sh || true
           # run setup with tracing and a timeout to fail fast if it hangs
           # Increased timeout to 120+ minutes for slower architectures (cortex-a53 SDK extraction can be slow)
           TIMEOUT=120m
@@ -181,17 +175,17 @@ jobs:
             EXIT_CODE=$?
             echo ""
             echo "setup.sh failed with exit code: $EXIT_CODE"
-            echo "=== Last 50 lines of setup.log ==="
-            tail -50 setup.log
+            echo ""
+            echo "=== Full setup.log content ==="
+            cat setup.log
             echo ""
             echo "=== Disk space ==="
             df -h /builder || df -h
             echo "=== /builder contents ==="
-            ls -lh /builder | head -30
+            ls -lah /builder/ | head -30
             echo ""
-            echo "=== Checking tar/zstd availability ==="
-            which tar zstd || echo "tar or zstd not found"
-            file openwrt-sdk*.tar.zst || true
+            echo "=== Checking wget connectivity ==="
+            wget --spider https://downloads.openwrt.org/releases/24.10-SNAPSHOT/ 2>&1 | head -10 || echo "wget spider failed"
             echo ""
             exit 1
           }
