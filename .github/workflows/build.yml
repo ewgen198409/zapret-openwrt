@@ -158,14 +158,6 @@ jobs:
           sed -r -i 's/^rm.+//' setup.sh
           # force using main OpenWrt downloads host to avoid slow mirror
           sed -r -i "s/^FILE_HOST=.*/FILE_HOST=downloads.openwrt.org/" setup.sh || true
-          # fix SDK download path - SDK is in /tools/, not /targets/
-          # First, let's see what DOWNLOAD_PATH is set to
-          echo "=== setup.sh DOWNLOAD_PATH lines before fix ==="
-          grep "DOWNLOAD_PATH" setup.sh || echo "No DOWNLOAD_PATH found"
-          # Fix: change targets to tools in DOWNLOAD_PATH
-          sed -r -i "s|/targets/|/tools/|g" setup.sh || true
-          echo "=== setup.sh DOWNLOAD_PATH lines after fix ==="
-          grep "DOWNLOAD_PATH" setup.sh || echo "No DOWNLOAD_PATH found"
           # make wget resumable and show progress to avoid silent long waits
           sed -i "s/\bwget\b/wget -c --tries=3 --timeout=30 --show-progress/g" setup.sh || true
           # run setup with tracing and a timeout to fail fast if it hangs
