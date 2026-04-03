@@ -13,8 +13,8 @@ PKG_LICENSE_FILES:=docs/LICENSE.txt
 
 PKG_SOURCE_URL:=https://github.com/bol-van/zapret.git
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=363fbe6943b16b0acd4a0e9dae35fc5075069d0d
-PKG_SOURCE_DATE:=2026-03-12
+PKG_SOURCE_VERSION:=ef637c482c7e64f3063f35dc2b10201e98d18e6d
+PKG_SOURCE_DATE:=2026-03-07
 
 #PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 #PKG_SOURCE_URL:=https://github.com/bol-van/zapret/archive/refs/tags/v$(PKG_VERSION).tar.gz?
@@ -60,16 +60,16 @@ endef
 define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/opt/zapret
 	$(INSTALL_DIR) $(1)/opt/zapret/$(MAKE_PATH)
-	$(INSTALL_BIN) $(PKG_BUILD_DIR)/$(MAKE_PATH)/nfqws $(1)/opt/zapret/$(MAKE_PATH)/nfqws
+	$(INSTALL_BIN) $(PKG_BUILD_DIR)/$(MAKE_PATH)/nfqws $(1)/opt/zapret/$(MAKE_PATH)/	
 	$(INSTALL_DIR) $(1)/opt/zapret/common
 	$(CP) $(PKG_BUILD_DIR)/common/* $(1)/opt/zapret/common/
 	#$(INSTALL_DIR) $(1)/opt/zapret/docs
 	#$(CP) $(PKG_BUILD_DIR)/docs/* $(1)/opt/zapret/docs/
 	$(INSTALL_DIR) $(1)/opt/zapret/files
 	$(CP) $(PKG_BUILD_DIR)/files/* $(1)/opt/zapret/files/
-	$(CP) ./files/* $(1)/opt/zapret/files/
+	$(CP)                ./files/* $(1)/opt/zapret/files/
 	$(INSTALL_DIR) $(1)/opt/zapret/ipset
-	$(CP) ./ipset/* $(1)/opt/zapret/ipset/
+	$(CP) $(PKG_BUILD_DIR)/ipset/* $(1)/opt/zapret/ipset/
 	$(INSTALL_BIN)  $(PKG_BUILD_DIR)/blockcheck.sh  $(1)/opt/zapret/blockcheck.sh
 	#$(INSTALL_DATA) $(PKG_BUILD_DIR)/config.default $(1)/opt/zapret/config.default
 	$(INSTALL_DIR) $(1)/opt/zapret/tmp
@@ -80,11 +80,18 @@ define Package/$(PKG_NAME)/install
 	$(INSTALL_DIR) $(1)/etc/init.d
 	$(INSTALL_BIN) ./init.d.sh $(1)/etc/init.d/zapret
 	$(INSTALL_DATA) ./config.default $(1)/opt/zapret/config.default
+	$(INSTALL_DATA) ./ipset/zapret-hosts-google.txt       $(1)/opt/zapret/ipset/zapret-hosts-google.txt
+	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset/zapret-hosts-user.txt
+	$(INSTALL_DATA) ./ipset/zapret-hosts-user-exclude.txt $(1)/opt/zapret/ipset/zapret-hosts-user-exclude.txt
+	$(INSTALL_DATA) ./ipset/zapret-ip-exclude.txt         $(1)/opt/zapret/ipset/zapret-ip-exclude.txt
+	$(INSTALL_DATA) ./ipset/cust1.txt         $(1)/opt/zapret/ipset/cust1.txt
 	$(INSTALL_DIR) $(1)/opt/zapret/ipset_def
 	$(INSTALL_DATA) ./ipset/zapret-hosts-google.txt       $(1)/opt/zapret/ipset_def/zapret-hosts-google.txt
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user.txt         $(1)/opt/zapret/ipset_def/zapret-hosts-user.txt
 	$(INSTALL_DATA) ./ipset/zapret-hosts-user-exclude.txt $(1)/opt/zapret/ipset_def/zapret-hosts-user-exclude.txt
 	$(INSTALL_DATA) ./ipset/zapret-ip-exclude.txt         $(1)/opt/zapret/ipset_def/zapret-ip-exclude.txt
+	$(INSTALL_DIR) $(1)/opt/zapret/init.d
+	$(INSTALL_DIR) $(1)/opt/zapret/init.d/openwrt
 	$(INSTALL_DIR) $(1)/opt/zapret/init.d/openwrt/custom.d
 	$(CP) ./custom.d/* $(1)/opt/zapret/init.d/openwrt/custom.d/
 	$(INSTALL_DIR) $(1)/etc/uci-defaults
