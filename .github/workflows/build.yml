@@ -64,14 +64,23 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "Tag name from GITHUB_REF_NAME: $GITHUB_REF_NAME"
-          echo "Tag name from github.ref_name: ${{ github.ref_name }}"
+          echo "Event: ${{ github.event_name }}"
+          echo "Ref: ${{ github.ref }}"
+          echo "Ref name: ${{ github.ref_name }}"
           BRANCH=$(gh api repos/$REPO_LNK --jq '.default_branch')
           REPO_DATE=$(gh api repos/$REPO_LNK/commits/$BRANCH --jq '.commit.committer.date')
           BUILD_DATE=$( date --utc +'%Y%m%d' )
           FW_DATE=$( date --utc +'%Y-%m-%d' )
+          
+          # Handle tag name - for workflow_dispatch use branch name or date, for push use tag
+          if [ -z "$GITHUB_REF_NAME" ] || [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            TAG_NAME=""
+          else
+            TAG_NAME="$GITHUB_REF_NAME"
+          fi
+          
           {
-            echo "tag=$GITHUB_REF_NAME"
+            echo "tag=$TAG_NAME"
             echo "date=$(date --utc -d $REPO_DATE +%Y%m%d)"
             echo "sha=$(gh api repos/$REPO_LNK/commits/$BRANCH --jq '.sha[0:7]')"
             echo "url=$(gh api repos/$REPO_LNK/commits/$BRANCH --jq '.html_url')"
@@ -149,10 +158,33 @@ jobs:
           sed -r -i 's/^rm.+//' setup.sh
           # force using main OpenWrt downloads host to avoid slow mirror
           sed -r -i "s/^FILE_HOST=.*/FILE_HOST=downloads.openwrt.org/" setup.sh || true
+          # fix SDK download path - SDK is in /tools/, not /targets/
+          # First, let's see what DOWNLOAD_PATH is set to
+          echo "=== setup.sh DOWNLOAD_PATH lines before fix ==="
+          grep "DOWNLOAD_PATH" setup.sh || echo "No DOWNLOAD_PATH found"
+          # Fix: change targets to tools in DOWNLOAD_PATH
+          sed -r -i "s|/targets/|/tools/|g" setup.sh || true
+          echo "=== setup.sh DOWNLOAD_PATH lines after fix ==="
+          grep "DOWNLOAD_PATH" setup.sh || echo "No DOWNLOAD_PATH found"
           # make wget resumable and show progress to avoid silent long waits
           sed -i "s/\bwget\b/wget -c --tries=3 --timeout=30 --show-progress/g" setup.sh || true
           # run setup with tracing and a timeout to fail fast if it hangs
-          timeout 60m bash -x ./setup.sh || (echo "setup.sh timed out or failed" && exit 1)
+          # Increased timeout to 120+ minutes for slower architectures (cortex-a53 SDK extraction can be slow)
+          TIMEOUT=120m
+          if [ "${{ matrix.arch }}" = "aarch64_cortex-a53" ]; then
+            TIMEOUT=150m
+          fi
+          echo "SDK setup timeout: $TIMEOUT"
+          timeout $TIMEOUT bash -x ./setup.sh || {
+            EXIT_CODE=$?
+            echo "setup.sh timed out or failed (exit code: $EXIT_CODE, timeout: $TIMEOUT)"
+            echo "=== Disk space ==="
+            df -h /builder || df -h
+            echo "=== /builder contents ==="
+            ls -lh /builder | head -20
+            exit 1
+          }
+          echo "SDK setup completed successfully"
           ls -lh
           if [ "$BRANCH" = "openwrt-24.10" ]; then
               echo "PKGTYPE=ipk" >> $GITHUB_ENV
@@ -218,7 +250,7 @@ jobs:
           if [ "$FAKE_BUILD" = "false" ]; then
               make defconfig
               sed -i 's/CONFIG_LUCI_JSMIN=y/CONFIG_LUCI_JSMIN=n/g' .config
-              PKGLIST=`echo package/zapret-openwrt/{zapret,zapret-tpws,zapret-mdig,zapret-ip2net,luci-app-zapret,luci-i18n-zapret-ru}/compile`
+              PKGLIST=`echo package/zapret-openwrt/{zapret,zapret-tpws,zapret-mdig,zapret-ip2net,luci-app-zapret}/compile`
               if [ "$MAX_SPEED" = "false" ]; then
                   make $PKGLIST V=s CONFIG_CCACHE=1 BUILD_LOG=1
               else
@@ -229,7 +261,6 @@ jobs:
               mkdir -p $OUT_DIR
               touch $OUT_DIR/zapret_$PKGVER-$ARCH.$PKGTYPE
               touch $OUT_DIR/luci-app-zapret_$PKGVER-all.$PKGTYPE
-              touch $OUT_DIR/luci-i18n-zapret-ru_$PKGVER-all.$PKGTYPE
           fi
           
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
@@ -316,20 +347,8 @@ jobs:
           find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c 'cp -R "{}/." sorted/$(basename "{}" | cut -d, -f3)/apk' \;
           LUCI_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-app-zapret*.ipk" -print | head -n 1 )
           LUCI_APK=$( find . -type f -path "*/zapret,apk,*/luci-app-zapret*.apk" -print | head -n 1 )
-          LUCI_I18N_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-i18n-zapret-ru*.ipk" -print | head -n 1 )
-          LUCI_I18N_APK=$( find . -type f -path "*/zapret,apk,*/luci-i18n-zapret-ru*.apk" -print | head -n 1 )
-          if [ -n "$LUCI_IPK" ]; then
-            find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
-          fi
-          if [ -n "$LUCI_APK" ]; then
-            find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_APK" "{}/" \;
-          fi
-          if [ -n "$LUCI_I18N_IPK" ]; then
-            find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_I18N_IPK" "{}/" \;
-          fi
-          if [ -n "$LUCI_I18N_APK" ]; then
-            find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_I18N_APK" "{}/" \;
-          fi
+          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
+          find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_APK" "{}/" \;
           # Prepare files for upload with paths
           mkdir -p release_files
           for arch_dir in sorted/*/; do
