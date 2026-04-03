@@ -160,6 +160,15 @@ jobs:
           sed -r -i "s/^FILE_HOST=.*/FILE_HOST=downloads.openwrt.org/" setup.sh || true
           # make wget resumable and show progress to avoid silent long waits
           sed -i "s/\bwget\b/wget -c --tries=3 --timeout=30 --show-progress/g" setup.sh || true
+          
+          # Debug: show what's in setup.sh for TARGET
+          echo "=== Checking setup.sh for TARGET variable ==="
+          head -20 setup.sh
+          echo "=== Grep for TARGET ==="
+          grep "^TARGET=" setup.sh || echo "TARGET not found in setup.sh"
+          echo "=== Environment variables ==="
+          env | grep -i target || echo "No TARGET in environment"
+          echo ""
           # run setup with tracing and a timeout to fail fast if it hangs
           # Increased timeout to 120+ minutes for slower architectures (cortex-a53 SDK extraction can be slow)
           TIMEOUT=120m
@@ -167,17 +176,27 @@ jobs:
             TIMEOUT=150m
           fi
           echo "SDK setup timeout: $TIMEOUT"
-          timeout $TIMEOUT bash -x ./setup.sh || {
+          # Capture both stdout and stderr to a log file for analysis
+          timeout $TIMEOUT bash -x ./setup.sh 2>&1 | tee setup.log || {
             EXIT_CODE=$?
-            echo "setup.sh timed out or failed (exit code: $EXIT_CODE, timeout: $TIMEOUT)"
+            echo ""
+            echo "setup.sh failed with exit code: $EXIT_CODE"
+            echo "=== Last 50 lines of setup.log ==="
+            tail -50 setup.log
+            echo ""
             echo "=== Disk space ==="
             df -h /builder || df -h
             echo "=== /builder contents ==="
-            ls -lh /builder | head -20
+            ls -lh /builder | head -30
+            echo ""
+            echo "=== Checking tar/zstd availability ==="
+            which tar zstd || echo "tar or zstd not found"
+            file openwrt-sdk*.tar.zst || true
+            echo ""
             exit 1
           }
           echo "SDK setup completed successfully"
-          ls -lh
+          ls -lh | grep -E '(bin|include|lib|staging)'
           if [ "$BRANCH" = "openwrt-24.10" ]; then
               echo "PKGTYPE=ipk" >> $GITHUB_ENV
           else
