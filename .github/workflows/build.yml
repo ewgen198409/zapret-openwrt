@@ -123,6 +123,7 @@ jobs:
         arch:
           - mipsel_24kc
           - aarch64_cortex-a53
+          - x86_64
         isTestOrFake:
           - ${{ needs.check.outputs.test_build == 'true' || needs.check.outputs.fake_build == 'true' }}
     container:
@@ -384,6 +385,7 @@ jobs:
               ### Supported architectures:
               - mipsel_24kc (MIPS)
               - aarch64_cortex-a53 (ARM64)
+              - x86_64 (x64)
               " \
               --prerelease=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
           fi
