@@ -4,6 +4,8 @@
 [![Downloads](https://img.shields.io/github/downloads/ewgen198409/zapret-openwrt/total.svg)](https://github.com/ewgen198409/zapret-openwrt/releases)
 [![License](https://img.shields.io/github/license/ewgen198409/zapret-openwrt)](LICENSE)
 
+## Не палимся!!!! Не раздаем свой "сломаный" антернет всем кому не лень (дом, улица и т.д.). Есть прецеденты, штраф=30т либо срок 5лет. Будьте аккуратнее, в нелегкое время живем!!!!
+
 ## Описание
 ## !!! Это открытый проект. При попытке его распространения за денежку, он будет закрыт для общего доступа и разработка прекращена!!!
 
