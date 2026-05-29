@@ -755,14 +755,29 @@ return baseclass.extend({
             let elem = document.getElementById("cbi-zapret-" + this.cfgsec + "-_" + this.cfgparam);
             if (elem) {
                 let val = value.trim();
-                if (this.multiline) {
-                    val = val.replace(/</g, '˂');
-                    val = val.replace(/>/g, '˃');
-                    val = val.replace(/\n/g, '<br/>');
-                    elem.querySelector('div').innerHTML = val;
-                } else {
-                    elem.querySelector('div').textContent = val;
-                }
+                    // Update the displayed value in the UI. The target element may or may not contain a nested <div>.
+                    // For multiline values we need to preserve line breaks, so we use innerHTML with <br/> tags.
+                    // For single‑line values we set plain text.
+                    if (this.multiline) {
+                        val = val.replace(/</g, '˂');
+                        val = val.replace(/>/g, '˃');
+                        val = val.replace(/\n/g, '<br/>');
+                        const targetDiv = elem.querySelector('div');
+                        if (targetDiv) {
+                            targetDiv.innerHTML = val;
+                        } else {
+                            // Fallback: directly set innerHTML on the element itself.
+                            elem.innerHTML = val;
+                        }
+                    } else {
+                        const targetDiv = elem.querySelector('div');
+                        if (targetDiv) {
+                            targetDiv.textContent = val;
+                        } else {
+                            // Fallback: set textContent on the element.
+                            elem.textContent = val;
+                        }
+                    }
             }
             ui.hideModal();
             /*

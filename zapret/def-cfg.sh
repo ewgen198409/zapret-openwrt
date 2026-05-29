@@ -332,12 +332,15 @@ function set_cfg_nfqws_strat
 				# Strategy $strat
 				
 				# ============== Youtube ==================================================
-				--filter-tcp=443
+				-filter-tcp=443
 				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
-				--hostlist-exclude=/opt/zapret/ipset/zapret-hosts-user-exclude.txt
-				--dpi-desync=split2
-				--dpi-desync-split-seqovl=681
-				--dpi-desync-split-seqovl-pattern=/opt/zapret/files/fake/stun.bin
+				--dpi-desync=multidisorder
+				--dpi-desync-split-pos=7,sld+1
+				--dpi-desync-fake-tls=0x0F0F0F0F
+				--dpi-desync-fake-tls=/opt/zapret/files/fake/tls_clienthello_www_google_com.bin
+				--dpi-desync-fake-tls-mod=rnd,dupsid,sni=www.google.com
+				--dpi-desync-fooling=badseq
+				--dpi-desync-autottl 2:2-12
 				# =========================================================================
 				# ===============  Hostlist user ==========================================
 				--new
