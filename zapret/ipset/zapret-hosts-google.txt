@@ -176,3 +176,16 @@ youtubego.com
 youtubego.com.br
 youtubego.id
 youtubego.in
+gvt1.com
+googleplay.com
+play.google.com
+beacons.gvt2.com
+play.googleapis.com
+play-fe.googleapis.com
+lh3.googleusercontent.com
+android.clients.google.com
+connectivitycheck.gstatic.com
+play-lh.googleusercontent.com
+play-games.googleusercontent.com
+prod-lt-playstoregatewayadapter-pa.googleapis.com
+youtubei.youtube.com

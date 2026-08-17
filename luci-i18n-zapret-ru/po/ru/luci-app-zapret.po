@@ -242,8 +242,11 @@ msgstr "Введите домены, разделенные пробелами �
 msgid "Test"
 msgstr "Тест"
 
-msgid "Auto Test"
-msgstr "Авто тест"
+msgid "Test User"
+msgstr "Тест user"
+
+msgid "Test Youtube"
+msgstr "Тест Youtube"
 
 msgid "Clear"
 msgstr "Очистить"
@@ -272,8 +275,8 @@ msgstr "Тест завершен.\n"
 msgid "Loading domain list...\n"
 msgstr "Загрузка списка доменов...\n"
 
-msgid "Auto test error: "
-msgstr "Ошибка авто теста: "
+msgid "Test user error: "
+msgstr "Ошибка теста пользователя: "
 
 msgid "Expecting:"
 msgstr "Ожидается:"

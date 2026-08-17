@@ -351,13 +351,47 @@ function set_cfg_nfqws_strat
 			commit $cfgname
 		EOF
 	fi
+	if [ "$strat" = "v9_by_Flowsell" ]; then
+		uci batch <<-EOF
+			set $cfgname.config.MODE_FILTER='hostlist'
+			set $cfgname.config.NFQWS_PORTS_TCP='443'
+			set $cfgname.config.NFQWS_PORTS_UDP='443'
+			set $cfgname.config.NFQWS_OPT="
+				# Strategy $strat
+				
+				--filter-tcp=443
+				--hostlist=/opt/zapret/ipset/zapret-hosts-google.txt
+				--ip-id=zero
+				--dpi-desync=fake,multisplit
+				--dpi-desync-split-seqovl=681
+				--dpi-desync-split-pos=1
+				--dpi-desync-fooling=ts
+				--dpi-desync-repeats=8
+				--dpi-desync-split-seqovl-pattern=/opt/zapret/files/fake/tls_clienthello_www_google_com.bin
+				--dpi-desync-fake-tls=/opt/zapret/files/fake/tls_clienthello_www_google_com.bin
+				--new
+				--filter-tcp=80,443
+				--hostlist-exclude=/opt/zapret/ipset/zapret-hosts-user-exclude.txt
+				--dpi-desync=fake,multisplit
+				--dpi-desync-split-seqovl=664
+				--dpi-desync-split-pos=1
+				--dpi-desync-fooling=ts
+				--dpi-desync-repeats=8
+				--dpi-desync-split-seqovl-pattern=/opt/zapret/files/fake/tls_clienthello_www_onetrust_com.bin
+				--dpi-desync-fake-tls=/opt/zapret/files/fake/stun2.bin
+				--dpi-desync-fake-tls=/opt/zapret/files/fake/tls_clienthello_www_onetrust_com.bin
+				--dpi-desync-fake-http=/opt/zapret/files/fake/tls_clienthello_www_onetrust_com.bin
+			"
+			commit $cfgname
+		EOF
+	fi
 	return 0
 }
 
 function set_cfg_default_values
 {
 	local opt_flags=${1:--}
-	local opt_strat=${2:-v8_by_Ewgeniy1984}
+	local opt_strat=${2:-v9_by_Flowsell}
 	local cfgname=${3:-$ZAPRET_CFG_NAME}
 
 	if ! echo "$opt_flags" | grep -q "(skip_base)"; then

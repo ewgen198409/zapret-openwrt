@@ -22,7 +22,13 @@ return view.extend({
             'id': 'auto_test_btn',
             'class': 'cbi-button cbi-button-neutral',
             'click': ui.createHandlerFn(this, this.toggleAutoTest)
-        }, _('Auto Test'));
+        }, _('Test User'));
+
+        var youtubeTestButton = E('button', {
+            'id': 'youtube_test_btn',
+            'class': 'cbi-button cbi-button-neutral',
+            'click': ui.createHandlerFn(this, this.runYoutubeTest)
+        }, _('Test Youtube'));
 
         var clearButton = E('button', {
             'class': 'cbi-button cbi-button-neutral',
@@ -61,6 +67,7 @@ return view.extend({
                 E('div', { 'style': 'margin-bottom: 10px; display:flex; align-items:center; gap:10px;' }, [
                     testButton,
                     autoTestButton,
+                    youtubeTestButton,
                     clearButton,
                     progressWrap
                 ]),
@@ -114,7 +121,7 @@ return view.extend({
             btn.classList.remove('cbi-button-neutral');
             btn.classList.add('cbi-button-negative');
         } else {
-            btn.textContent = _('Auto Test');
+            btn.textContent = _('Test User');
             btn.classList.remove('cbi-button-negative');
             btn.classList.add('cbi-button-neutral');
         }
@@ -252,8 +259,58 @@ return view.extend({
 			fs.remove(tempJson).catch(function() {});
 			this.runTest(domains);
 		}.bind(this)).catch(function(e) {
-			resultArea.innerHTML = '<span style="color:#f66">' + _('Auto test error: ') + e.message + '</span>';
+			resultArea.innerHTML = '<span style="color:#f66">' + _('Test user error: ') + e.message + '</span>';
 			fs.remove(tempJson).catch(function() {});
 		});
+	},
+
+	runYoutubeTest: function() {
+		var resultArea = document.getElementById('result_area');
+		if (!resultArea) return;
+
+		this._stopTest = false;
+
+		var domains = [
+			'youtu.be',
+			'youtube.com',
+			'i.ytimg.com',
+			'i9.ytimg.com',
+			'yt3.ggpht.com',
+			'yt4.ggpht.com',
+			'googleapis.com',
+			'jnn-pa.googleapis.com',
+			'googleusercontent.com',
+			'signaler-pa.youtube.com',
+			'youtubei.googleapis.com',
+			'manifest.googlevideo.com',
+			'yt3.googleusercontent.com',
+			'rr4---sn-4g5e6nze.googlevideo.com',
+			'rr4---sn-5go7yner.googlevideo.com',
+			'rr4---sn-q4flrnsl.googlevideo.com',
+			'rr5---sn-n8v7knez.googlevideo.com',
+			'rr2---sn-q4fl6ndl.googlevideo.com',
+			'rr1---sn-q4fl6n6y.googlevideo.com',
+			'rr1---sn-aj5go5-53.googlevideo.com',
+			'rr1---sn-4axm-n8vs.googlevideo.com',
+			'rr14---sn-n8v7kn7r.googlevideo.com',
+			'rr16---sn-axq7sn76.googlevideo.com',
+			'rr4---sn-jvhnu5g-c35d.googlevideo.com',
+			'rr1---sn-8ph2xajvh-5xge.googlevideo.com',
+			'rr1---sn-xguxaxjvh-gufl.googlevideo.com',
+			'rr1---sn-gvnuxaxjvh-jx3z.googlevideo.com',
+			'rr1---sn-gvnuxaxjvh-jx3l.googlevideo.com',
+			'rr1---sn-gvnuxaxjvh-o8ge.googlevideo.com',
+			'rr5---sn-gvnuxaxjvh-n8vk.googlevideo.com',
+			'rr10---sn-gvnuxaxjvh-304z.googlevideo.com',
+			'rr12---sn-gvnuxaxjvh-bvwz.googlevideo.com',
+			'rr3---sn-ug5onuxaxjvh-n8v6.googlevideo.com',
+			'rr1---sn-ug5onuxaxjvh-p5ge.googlevideo.com',
+			'rr1---sn-ug5onuxaxjvh-p3ul.googlevideo.com',
+			'rr1---sn-ug5onuxaxjvh-n8v6.googlevideo.com',
+			'rr1---sn-u5uuxaxjvhg0-ocje.googlevideo.com'
+		];
+
+		this.runTest(domains);
 	}
+
 });
