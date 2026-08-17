@@ -27,7 +27,7 @@ return view.extend({
         var youtubeTestButton = E('button', {
             'id': 'youtube_test_btn',
             'class': 'cbi-button cbi-button-neutral',
-            'click': ui.createHandlerFn(this, this.runYoutubeTest)
+            'click': ui.createHandlerFn(this, this.toggleYoutubeTest)
         }, _('Test Youtube'));
 
         var clearButton = E('button', {
@@ -80,6 +80,8 @@ return view.extend({
         var resultArea = document.getElementById('result_area');
         if (!resultArea) return;
 
+        if (this._isBusy()) return;
+
         var domains;
         if (domainsArray && domainsArray.length > 0) {
             // Normalize: accept both strings and objects {host, id, country}
@@ -101,6 +103,37 @@ return view.extend({
             return;
         }
 
+        this._stopTest = false;
+        this._startTest(domains, null);
+    },
+
+    _stopTest: false,
+    _testing: false,
+    _activeTestButton: null,
+
+    _isBusy: function() {
+        if (this._testing) {
+            var resultArea = document.getElementById('result_area');
+            if (resultArea) resultArea.appendChild(E('div', { 'style': 'color:#fa0; margin-top:6px' }, _('A test is already running.')));
+            return true;
+        }
+        return false;
+    },
+
+    _startTest: function(domains, activeBtnId) {
+        var resultArea = document.getElementById('result_area');
+        if (!resultArea) return;
+
+        // Normalize: accept both strings and objects {host, id, country}
+        domains = domains.map(function(d) {
+            if (typeof d === 'string') return { host: d, id: d, country: '' };
+            return d;
+        });
+
+        this._testing = true;
+        this._activeTestButton = activeBtnId || null;
+        if (this._activeTestButton) this._setTestButton(this._activeTestButton, true);
+
         resultArea.innerHTML = '';
         var wrap = document.getElementById('progress_wrap');
         var fill = document.getElementById('progress_bar_fill');
@@ -111,28 +144,42 @@ return view.extend({
         this.testNext(domains, 0, resultArea, domains.length);
     },
 
-    _stopTest: false,
+    _finish: function() {
+        this._testing = false;
+        this._stopTest = false;
+        if (this._activeTestButton) this._setTestButton(this._activeTestButton, false);
+        this._activeTestButton = null;
+    },
 
-    _setAutoTestButton: function(running) {
-        var btn = document.getElementById('auto_test_btn');
+    _setTestButton: function(btnId, running) {
+        var btn = document.getElementById(btnId);
         if (!btn) return;
+        var idleLabels = { 'auto_test_btn': _('Test User'), 'youtube_test_btn': _('Test Youtube') };
         if (running) {
             btn.textContent = _('Stop Test');
             btn.classList.remove('cbi-button-neutral');
             btn.classList.add('cbi-button-negative');
         } else {
-            btn.textContent = _('Test User');
+            btn.textContent = idleLabels[btnId] || _('Test');
             btn.classList.remove('cbi-button-negative');
             btn.classList.add('cbi-button-neutral');
         }
     },
 
     toggleAutoTest: function() {
-        if (this._stopTest === false && document.getElementById('auto_test_btn').textContent === _('Stop Test')) {
+        if (this._activeTestButton === 'auto_test_btn' && this._stopTest === false) {
             this._stopTest = true;
             return;
         }
         this.runAutoTest();
+    },
+
+    toggleYoutubeTest: function() {
+        if (this._activeTestButton === 'youtube_test_btn' && this._stopTest === false) {
+            this._stopTest = true;
+            return;
+        }
+        this.runYoutubeTest();
     },
 
     testNext: function(domains, index, resultArea, total) {
@@ -140,8 +187,7 @@ return view.extend({
             resultArea.appendChild(E('div', { 'style': 'color:#fa0; margin-top:6px' }, _('Test stopped by user.')));
             var fill = document.getElementById('progress_bar_fill');
             if (fill) fill.style.background = 'linear-gradient(90deg,#a70,#f84)';
-            this._stopTest = false;
-            this._setAutoTestButton(false);
+            this._finish();
             return;
         }
 
@@ -149,8 +195,7 @@ return view.extend({
             resultArea.appendChild(E('div', { 'style': 'color:#4c4; margin-top:6px' }, _('Test completed.')));
             var fill = document.getElementById('progress_bar_fill');
             if (fill) fill.style.width = '100%';
-            this._stopTest = false;
-            this._setAutoTestButton(false);
+            this._finish();
             return;
         }
 
@@ -200,9 +245,13 @@ return view.extend({
 		var resultArea = document.getElementById('result_area');
 		if (!resultArea) return;
 
+		if (this._isBusy()) return;
+
+		this._testing = true;
+		this._activeTestButton = 'auto_test_btn';
+		this._setTestButton('auto_test_btn', true);
 		this._stopTest = false;
-		this._setAutoTestButton(true);
-		resultArea.value = _('Loading domain list...\n');
+		resultArea.innerHTML = _('Loading domain list...\n');
 
 		var jsonUrl = 'https://raw.githubusercontent.com/hyperion-cs/dpi-checkers/refs/heads/main/ru/tcp-16-20/suite.v2.json';
 		var tempJson = '/tmp/dpi_suite.json';
@@ -257,16 +306,26 @@ return view.extend({
 			}
 
 			fs.remove(tempJson).catch(function() {});
-			this.runTest(domains);
+
+			if (this._stopTest) {
+				resultArea.appendChild(E('div', { 'style': 'color:#fa0; margin-top:6px' }, _('Test stopped by user.')));
+				this._finish();
+				return;
+			}
+
+			this._startTest(domains, 'auto_test_btn');
 		}.bind(this)).catch(function(e) {
 			resultArea.innerHTML = '<span style="color:#f66">' + _('Test user error: ') + e.message + '</span>';
 			fs.remove(tempJson).catch(function() {});
+			this._finish();
 		});
 	},
 
 	runYoutubeTest: function() {
 		var resultArea = document.getElementById('result_area');
 		if (!resultArea) return;
+
+		if (this._isBusy()) return;
 
 		this._stopTest = false;
 
@@ -310,7 +369,7 @@ return view.extend({
 			'rr1---sn-u5uuxaxjvhg0-ocje.googlevideo.com'
 		];
 
-		this.runTest(domains);
+		this._startTest(domains, 'youtube_test_btn');
 	}
 
 });

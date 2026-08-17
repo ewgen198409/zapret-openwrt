@@ -278,6 +278,9 @@ msgstr "Загрузка списка доменов...\n"
 msgid "Test user error: "
 msgstr "Ошибка теста пользователя: "
 
+msgid "A test is already running."
+msgstr "Тест уже выполняется."
+
 msgid "Expecting:"
 msgstr "Ожидается:"
 
