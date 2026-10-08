@@ -175,11 +175,7 @@ jobs:
             echo "setup.sh failed with exit code: $EXIT_CODE"
             exit 1
           }
-          if [ "$BRANCH" = "openwrt-24.10" ]; then
-              echo "PKGTYPE=ipk" >> $GITHUB_ENV
-          else
-              echo "PKGTYPE=apk" >> $GITHUB_ENV
-          fi
+          echo "PKGTYPE=apk" >> $GITHUB_ENV
 
       - name: Setup ccache
         uses: actions/cache@v4
@@ -252,27 +248,21 @@ jobs:
               touch $OUT_DIR/luci-app-zapret_$PKGVER-all.$PKGTYPE
           fi
           
-          find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.[ai]pk$" -delete
+          find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.apk$" -delete
 
           PKG_DIR=./bin/packages/*/base
           (
             cd $PKG_DIR || exit 1
             > Packages
-            for pkg in *.ipk; do
+            for pkg in *.apk; do
               if [ -f "$pkg" ]; then
-                # Check if control.tar.gz or control.tar exists
-                if ar t "$pkg" 2>/dev/null | grep -q '^control\.tar\.gz$'; then
-                  ar p "$pkg" control.tar.gz 2>/dev/null | tar -xzO ./control 2>/dev/null >> Packages
-                elif ar t "$pkg" 2>/dev/null | grep -q '^control\.tar$'; then
-                  ar p "$pkg" control.tar 2>/dev/null | tar -xO ./control 2>/dev/null >> Packages
-                fi
-                echo "" >> Packages
+                echo "$pkg" >> Packages
               fi
             done
             if [ -s Packages ]; then
               gzip Packages
             else
-              echo "No packages found or failed to extract control"
+              echo "No APK packages found"
               exit 1
             fi
           )
@@ -330,17 +320,11 @@ jobs:
         run: |
           rm -rf sorted release_files
           mkdir -p sorted
-          find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)' \;
           find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)/apk' \;
-          find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'cp -R "{}/." sorted/$(basename "{}" | cut -d, -f3)' \;
           find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c 'cp -R "{}/." sorted/$(basename "{}" | cut -d, -f3)/apk' \;
-          LUCI_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-app-zapret*.ipk" -print | head -n 1 )
           LUCI_APK=$( find . -type f -path "*/zapret,apk,*/luci-app-zapret*.apk" -print | head -n 1 )
-          LUCI_I18N_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-i18n-zapret-ru*.ipk" -print | head -n 1 )
           LUCI_I18N_APK=$( find . -type f -path "*/zapret,apk,*/luci-i18n-zapret-ru*.apk" -print | head -n 1 )
-          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
           find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_APK" "{}/" \;
-          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_I18N_IPK" "{}/" \;
           find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_I18N_APK" "{}/" \;
           # Prepare files for upload with paths
           mkdir -p release_files
