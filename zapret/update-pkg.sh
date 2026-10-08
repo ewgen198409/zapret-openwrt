@@ -274,6 +274,10 @@ function pkg_name_from_asset
 	local base pkg
 	base="${fname##*/}"
 	base="${base%.${ext}}"
+	# Release assets are now named with an architecture suffix, for example
+	# zapret-72.20261008-aarch64_cortex-a53.apk.
+	base="${base%_${ZAP_CPU_ARCH}}"
+	base="${base%-${ZAP_CPU_ARCH}}"
 	case "$ext" in
 		ipk)
 			pkg="${base%%_*}"
@@ -351,7 +355,7 @@ function get_actual_release
 					;;
 			esac
 			case "$asset_name" in
-				*"_""${ZAP_CPU_ARCH}"".""${ZAP_PKG_EXT}"|*"_all.""${ZAP_PKG_EXT}") ;;
+				*"-""${ZAP_CPU_ARCH}""."${ZAP_PKG_EXT}"|*"_""${ZAP_CPU_ARCH}""."${ZAP_PKG_EXT}"|*"_all.""${ZAP_PKG_EXT}") ;;
 				*)
 					json_select ..
 					continue
