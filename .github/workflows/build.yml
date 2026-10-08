@@ -167,6 +167,14 @@ jobs:
             sed -i "s/\bwget\b/wget -c --tries=5 --timeout=120 --show-progress/g" setup.sh || true
             # Also reduce verbosity to see actual errors
             sed -i "s/ -nv / /g" setup.sh || true
+            # setup.sh invokes wget directly. Reuse a curl-based wrapper with
+            # resume and transient-error retries, preserving the original URL,
+            # output path and SHA256 verification performed by OpenWrt.
+            mkdir -p .github-scripts
+            cp "$GITHUB_WORKSPACE/zapret-openwrt/.github/scripts/wget-retry" .github-scripts/wget
+            chmod +x .github-scripts/wget
+            PATH="$PWD/.github-scripts:$PATH"
+            export PATH
             # run setup with tracing and a timeout to fail fast if it hangs
             # Increased timeout to 120+ minutes for slower architectures (cortex-a53 SDK extraction can be slow)
             TIMEOUT=120m

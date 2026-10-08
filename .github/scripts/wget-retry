@@ -1,0 +1,68 @@
+#!/bin/sh
+# Compatibility wrapper for OpenWrt setup.sh, which invokes wget directly.
+# It keeps resume support while retrying transient CDN failures.
+set -eu
+
+output=
+url=
+
+while [ "$#" -gt 0 ]; do
+    case "$1" in
+        -O|--output-document)
+            output=$2
+            shift 2
+            ;;
+        --output-document=*|--output=*)
+            output=${1#*=}
+            shift
+            ;;
+        -o)
+            output=$2
+            shift 2
+            ;;
+        -*)
+            shift
+            ;;
+        *)
+            url=$1
+            shift
+            ;;
+    esac
+done
+
+if [ -z "$url" ]; then
+    echo "wget-retry: missing URL" >&2
+    exit 2
+fi
+
+if [ -z "$output" ]; then
+    output=${url##*/}
+    case "$output" in
+        *\?*) output=${output%%\?*} ;;
+    esac
+fi
+
+attempt=0
+while [ "$attempt" -lt 50 ]; do
+    attempt=$((attempt + 1))
+    if curl \
+        --fail \
+        --location \
+        --http1.1 \
+        --continue-at - \
+        --connect-timeout 60 \
+        --speed-time 120 \
+        --speed-limit 1024 \
+        --output "$output" \
+        "$url"; then
+        exit 0
+    fi
+
+    if [ "$attempt" -ge 50 ]; then
+        echo "wget-retry: download failed after 50 attempts" >&2
+        exit 1
+    fi
+
+    echo "wget-retry: transfer interrupted; resuming in 2 seconds" >&2
+    sleep 2
+done
