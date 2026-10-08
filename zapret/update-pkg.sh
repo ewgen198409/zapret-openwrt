@@ -276,7 +276,11 @@ function pkg_name_from_asset
 	base="${base%.${ext}}"
 	case "$ext" in
 		ipk)
-			pkg="${base%%_*}"
+			case "$base" in
+				*"_${ZAP_CPU_ARCH}") base="${base%_${ZAP_CPU_ARCH}}"; pkg="${base%%_*}" ;;
+				*"-${ZAP_CPU_ARCH}") base="${base%-${ZAP_CPU_ARCH}}"; pkg="${base%%_*}" ;;
+				*) pkg="${base%%_*}" ;;
+			esac
 			;;
 		apk)
 			pkg=$( echo "$base" | sed -E 's/-[0-9][^-]*$//' )
@@ -351,7 +355,7 @@ function get_actual_release
 					;;
 			esac
 			case "$asset_name" in
-				*"_""${ZAP_CPU_ARCH}"".""${ZAP_PKG_EXT}"|*"_all.""${ZAP_PKG_EXT}") ;;
+				*"_""${ZAP_CPU_ARCH}""."${ZAP_PKG_EXT}"|*"-""${ZAP_CPU_ARCH}""."${ZAP_PKG_EXT}"|*"_all.""${ZAP_PKG_EXT}"|*"-all.""${ZAP_PKG_EXT}") ;;
 				*)
 					json_select ..
 					continue

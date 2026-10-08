@@ -144,37 +144,45 @@ jobs:
           BRANCH: ${{ matrix.branch }}
         shell: bash
         run: |
-          # ensure zstd available for .zst archives
-          if ! command -v zstd >/dev/null 2>&1; then
-            apt-get update && apt-get install -y zstd
+          # Official SDK images may already contain the target SDK. Reuse it to
+          # avoid downloading and extracting the SDK again for every matrix job.
+          if [ ! -x ./staging_dir/host/bin/apk ] && [ ! -x ./staging_dir/host/bin/opkg ]; then
+            # ensure zstd available for .zst archives
+            if ! command -v zstd >/dev/null 2>&1; then
+              apt-get update && apt-get install -y zstd
+            fi
+            tar --version || true
+            zstd --version || true
+            # gpg --verbose --recv-keys 0x1D53D1877742E911
+            # gpg --verbose --import <(wget -qO- 'https://git.openwrt.org/?p=keyring.git;a=blob_plain;f=gpg/0x1D53D1877742E911.asc')
+            gpg --verbose --import <(wget -qO- 'https://raw.githubusercontent.com/openwrt/keyring/refs/heads/master/gpg/0x1D53D1877742E911.asc')
+            # disable check signatures
+            sed -i 's/gpg --/#gpg --/g' setup.sh
+            # disable cleanup keys
+            sed -r -i 's/^rm.+//' setup.sh
+            # force using main OpenWrt downloads host to avoid slow mirror
+            sed -r -i "s/^FILE_HOST=.*/FILE_HOST=downloads.openwrt.org/" setup.sh || true
+            # make wget more resilient: increase timeout and retries for large SDK files
+            sed -i "s/\bwget\b/wget -c --tries=5 --timeout=120 --show-progress/g" setup.sh || true
+            # Also reduce verbosity to see actual errors
+            sed -i "s/ -nv / /g" setup.sh || true
+            # setup.sh invokes wget directly. Reuse a curl-based wrapper with
+            # resume and transient-error retries, preserving OpenWrt's SHA256 check.
+            mkdir -p .github-scripts
+            cp "$GITHUB_WORKSPACE/.github/scripts/wget-retry" .github-scripts/wget
+            chmod +x .github-scripts/wget
+            PATH="$PWD/.github-scripts:$PATH"
+            export PATH
+            TIMEOUT=120m
+            if [ "${{ matrix.arch }}" = "aarch64_cortex-a53" ]; then
+              TIMEOUT=150m
+            fi
+            timeout $TIMEOUT bash -x ./setup.sh || {
+              EXIT_CODE=$?
+              echo "setup.sh failed with exit code: $EXIT_CODE"
+              exit 1
+            }
           fi
-          tar --version || true
-          zstd --version || true
-          # gpg --verbose --recv-keys 0x1D53D1877742E911
-          # gpg --verbose --import <(wget -qO- 'https://git.openwrt.org/?p=keyring.git;a=blob_plain;f=gpg/0x1D53D1877742E911.asc')
-          gpg --verbose --import <(wget -qO- 'https://raw.githubusercontent.com/openwrt/keyring/refs/heads/master/gpg/0x1D53D1877742E911.asc')
-          # disable check signatures
-          sed -i 's/gpg --/#gpg --/g' setup.sh
-          # disable cleanup keys
-          sed -r -i 's/^rm.+//' setup.sh
-          # force using main OpenWrt downloads host to avoid slow mirror
-          sed -r -i "s/^FILE_HOST=.*/FILE_HOST=downloads.openwrt.org/" setup.sh || true
-          # make wget more resilient: increase timeout and retries for large SDK files
-          # Default 30 sec timeout is too short for 200MB+ SDK archives
-          sed -i "s/\bwget\b/wget -c --tries=5 --timeout=120 --show-progress/g" setup.sh || true
-          # Also reduce verbosity to see actual errors
-          sed -i "s/ -nv / /g" setup.sh || true
-          # run setup with tracing and a timeout to fail fast if it hangs
-          # Increased timeout to 120+ minutes for slower architectures (cortex-a53 SDK extraction can be slow)
-          TIMEOUT=120m
-          if [ "${{ matrix.arch }}" = "aarch64_cortex-a53" ]; then
-            TIMEOUT=150m
-          fi
-          timeout $TIMEOUT bash -x ./setup.sh || {
-            EXIT_CODE=$?
-            echo "setup.sh failed with exit code: $EXIT_CODE"
-            exit 1
-          }
           echo "PKGTYPE=ipk" >> $GITHUB_ENV
 
       - name: Setup ccache
@@ -324,27 +332,32 @@ jobs:
           BUILD_DATE: ${{ needs.check.outputs.build_date }}
           PKGVER: ${{ needs.build.outputs.pkgver }}
         run: |
-          rm -rf sorted release_files
-          mkdir -p sorted
-          find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)' \;
-          find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'cp -R "{}/." sorted/$(basename "{}" | cut -d, -f3)' \;
-          LUCI_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-app-zapret*.ipk" -print | head -n 1 )
-          LUCI_I18N_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-i18n-zapret-ru*.ipk" -print | head -n 1 )
-          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
-          find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_I18N_IPK" "{}/" \;
-          # Prepare files for upload with paths
+          rm -rf release_files
           mkdir -p release_files
-          for arch_dir in sorted/*/; do
-            arch=$(basename "$arch_dir")
-            rm -rf "release_files/${arch}"
-            mkdir -p "release_files/${arch}"
-            for file in "$arch_dir"/*; do
-              if [ -f "$file" ]; then
+
+          # Downloaded artifacts are named zapret,ipk,<arch>. Keep each matrix
+          # result separate so files with the same basename cannot overwrite
+          # each other during release upload.
+          find . -maxdepth 1 -type d -name 'zapret,ipk,*' -print0 |
+            while IFS= read -r -d '' artifact_dir; do
+              arch=$(basename "$artifact_dir" | cut -d, -f3)
+              mkdir -p "release_files/${arch}"
+              for file in "$artifact_dir"/*; do
+                [ -f "$file" ] || continue
                 filename=$(basename "$file")
+                case "$filename" in
+                  *"${arch}".ipk)
+                    ;;
+                  *-all.ipk)
+                    filename="${filename%.ipk}-${arch}.ipk"
+                    ;;
+                  *)
+                    filename="${filename%.ipk}-${arch}.ipk"
+                    ;;
+                esac
                 cp "$file" "release_files/${arch}/${filename}"
-              fi
+              done
             done
-          done
 
       - name: Create and upload release
         env:
@@ -369,12 +382,11 @@ jobs:
               --prerelease=${{ env.TEST_BUILD == 'true' || env.FAKE_BUILD == 'true' }}
           fi
           
-          # Upload files using gh release upload
-          for file in release_files/*/*; do
-            if [ -f "$file" ]; then
+          # Upload each architecture-specific file using its unique filename.
+          find release_files -type f -print0 |
+            while IFS= read -r -d '' file; do
               gh release upload "$TAG_NAME" "$file" --repo ${REPO_LNK} --clobber
-            fi
-          done
+            done
 
       - name: Generate release JSON for gh-pages
         env:
