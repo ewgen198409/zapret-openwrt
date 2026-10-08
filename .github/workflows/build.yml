@@ -119,7 +119,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        branch: [ openwrt-24.10 ]
+        branch: [ openwrt-25.12 ]
         arch:
           - mipsel_24kc
           - aarch64_cortex-a53
@@ -380,7 +380,7 @@ jobs:
           if ! gh release view "$TAG_NAME" --repo ${REPO_LNK} >/dev/null 2>&1; then
             gh release create "$TAG_NAME" --repo ${REPO_LNK} \
               --title "zapret v${PKGVER}" \
-              --notes "zapret v${PKGVER} for OpenWrt 24.10
+              --notes "zapret v${PKGVER} for OpenWrt 25.12
 
               ### Supported architectures:
               - mipsel_24kc (MIPS)
