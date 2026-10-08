@@ -169,7 +169,7 @@ jobs:
             # setup.sh invokes wget directly. Reuse a curl-based wrapper with
             # resume and transient-error retries, preserving OpenWrt's SHA256 check.
             mkdir -p .github-scripts
-            cp "$GITHUB_WORKSPACE/.github/scripts/wget-retry" .github-scripts/wget
+            cp "$GITHUB_WORKSPACE/zapret-openwrt/.github/scripts/wget-retry" .github-scripts/wget
             chmod +x .github-scripts/wget
             PATH="$PWD/.github-scripts:$PATH"
             export PATH
