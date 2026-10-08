@@ -175,11 +175,7 @@ jobs:
             echo "setup.sh failed with exit code: $EXIT_CODE"
             exit 1
           }
-          if [ "$BRANCH" = "openwrt-24.10" ]; then
-              echo "PKGTYPE=ipk" >> $GITHUB_ENV
-          else
-              echo "PKGTYPE=apk" >> $GITHUB_ENV
-          fi
+          echo "PKGTYPE=ipk" >> $GITHUB_ENV
 
       - name: Setup ccache
         uses: actions/cache@v4
@@ -331,17 +327,11 @@ jobs:
           rm -rf sorted release_files
           mkdir -p sorted
           find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)' \;
-          find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c 'mkdir -p sorted/$(basename "{}" | cut -d, -f3)/apk' \;
           find . -maxdepth 1 -type d -name "zapret,ipk,*" -exec sh -c 'cp -R "{}/." sorted/$(basename "{}" | cut -d, -f3)' \;
-          find . -maxdepth 1 -type d -name "zapret,apk,*" -exec sh -c 'cp -R "{}/." sorted/$(basename "{}" | cut -d, -f3)/apk' \;
           LUCI_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-app-zapret*.ipk" -print | head -n 1 )
-          LUCI_APK=$( find . -type f -path "*/zapret,apk,*/luci-app-zapret*.apk" -print | head -n 1 )
           LUCI_I18N_IPK=$( find . -type f -path "*/zapret,ipk,*/luci-i18n-zapret-ru*.ipk" -print | head -n 1 )
-          LUCI_I18N_APK=$( find . -type f -path "*/zapret,apk,*/luci-i18n-zapret-ru*.apk" -print | head -n 1 )
           find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_IPK" "{}/" \;
-          find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_APK" "{}/" \;
           find ./sorted -mindepth 1 -maxdepth 1 -type d -exec cp -f "$LUCI_I18N_IPK" "{}/" \;
-          find ./sorted -mindepth 2 -maxdepth 2 -type d -name "apk" -exec cp -f "$LUCI_I18N_APK" "{}/" \;
           # Prepare files for upload with paths
           mkdir -p release_files
           for arch_dir in sorted/*/; do
@@ -349,17 +339,6 @@ jobs:
             rm -rf "release_files/${arch}"
             mkdir -p "release_files/${arch}"
             for file in "$arch_dir"/*; do
-              if [ -f "$file" ]; then
-                filename=$(basename "$file")
-                cp "$file" "release_files/${arch}/${filename}"
-              fi
-            done
-          done
-          # Also copy apk subdirs if any
-          for apk_dir in sorted/*/apk/; do
-            arch=$(basename "$(dirname "$apk_dir")")
-            mkdir -p "release_files/${arch}"
-            for file in "$apk_dir"/*; do
               if [ -f "$file" ]; then
                 filename=$(basename "$file")
                 cp "$file" "release_files/${arch}/${filename}"
