@@ -46,6 +46,11 @@ ZAP_CPU_ARCH="$DISTRIB_ARCH"
 REPO_OWNER="ewgen198409"
 REPO_NAME="zapret-openwrt"
 ZAP_REL_URL="https://raw.githubusercontent.com/${REPO_OWNER}/${REPO_NAME}/gh-pages/releases/releases_${ZAP_CPU_ARCH}.json"
+ZAP_OPENWRT_BRANCH=$( printf '%s' "$DISTRIB_RELEASE" | awk -F. '{print $1"."$2}' )
+ZAP_OPENWRT_TAG_SUFFIX=""
+if [ -n "$ZAP_OPENWRT_BRANCH" ] && [ "$ZAP_OPENWRT_BRANCH" != "__unknown__" ]; then
+	ZAP_OPENWRT_TAG_SUFFIX="openwrt-${ZAP_OPENWRT_BRANCH}"
+fi
 CURL_TIMEOUT=5
 CURL_HEADER1="Accept: application/json"
 CURL_HEADER2="User-Agent: Mozilla/5.0 (compatible; zapret-updater)"
@@ -292,6 +297,16 @@ function pkg_name_from_asset
 	echo "$pkg"
 }
 
+function release_tag_matches_openwrt_branch
+{
+	local tag="$1"
+	[ -z "$ZAP_OPENWRT_TAG_SUFFIX" ] && return 0
+	case "$tag" in
+		*"-${ZAP_OPENWRT_TAG_SUFFIX}"|*"-${ZAP_OPENWRT_TAG_SUFFIX}-test"|*"-${ZAP_OPENWRT_TAG_SUFFIX}-fake") return 0 ;;
+		*) return 1 ;;
+	esac
+}
+
 function get_actual_release
 {
 	local tag url pre idx_list
@@ -323,6 +338,10 @@ function get_actual_release
 		json_get_var tag tag_name
 		json_get_var pre prerelease
 		if [ -n "$OPT_RELEASE_TAG" ] && [ "$tag" != "$OPT_RELEASE_TAG" ]; then
+			json_select ..
+			continue
+		fi
+		if [ -z "$OPT_RELEASE_TAG" ] && ! release_tag_matches_openwrt_branch "$tag"; then
 			json_select ..
 			continue
 		fi
