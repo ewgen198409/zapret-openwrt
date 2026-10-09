@@ -237,7 +237,7 @@ function download_releases_info
 	echo "Download releases info from GitHub API..."
 	
 	# Use GitHub API directly
-	local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases"
+	local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=3"
 	
 	echo "Fetching releases from: $api_url"
 	resp=$( curl -s -D - --max-time $CURL_TIMEOUT -H "$CURL_HEADER1" -H "$CURL_HEADER2" "$api_url" 2>/dev/null )
@@ -288,7 +288,7 @@ function pkg_name_from_asset
 			pkg="${base%%_*}"
 			;;
 		apk)
-			pkg=$( echo "$base" | sed -E 's/-[0-9][^-]*$//' )
+			pkg=$( echo "$base" | sed -E 's/-[0-9][^-]*(-r[0-9]+)?$//' )
 			;;
 		*)
 			pkg="${base%%_*}"

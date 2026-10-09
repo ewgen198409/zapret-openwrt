@@ -257,8 +257,13 @@ jobs:
           else
               OUT_DIR=./bin/packages/dev_x/base
               mkdir -p $OUT_DIR
-              touch $OUT_DIR/zapret_$PKGVER-$ARCH.$PKGTYPE
-              touch $OUT_DIR/luci-app-zapret_$PKGVER-all.$PKGTYPE
+              if [ "$PKGTYPE" = "apk" ]; then
+                touch "$OUT_DIR/zapret-$PKGVER.apk"
+                touch "$OUT_DIR/luci-app-zapret-$PKGVER-r1.apk"
+              else
+                touch "$OUT_DIR/zapret_$PKGVER-$ARCH.$PKGTYPE"
+                touch "$OUT_DIR/luci-app-zapret_$PKGVER-all.$PKGTYPE"
+              fi
           fi
           
           find ./bin/packages/*/base -type f ! -regex ".*\(zapret\).*\.apk$" -delete
