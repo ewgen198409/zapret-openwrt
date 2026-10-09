@@ -131,6 +131,7 @@ jobs:
       options: --user root
     outputs:
       pkgver: ${{ steps.build.outputs.pkgver }}
+      branch: ${{ steps.build.outputs.branch }}
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -286,6 +287,7 @@ jobs:
           cp -R $PKG_DIR/. $OUTDIR/
           ./staging_dir/host/bin/ccache --max-size=10M --show-stats
           
+          echo "branch=${{ matrix.branch }}" >> $GITHUB_OUTPUT
           echo "OUTDIR=$OUTDIR" >> $GITHUB_ENV
           echo "pkgver=$PKGVER" >> $GITHUB_OUTPUT
           echo "status=success" >> $GITHUB_OUTPUT
@@ -365,14 +367,16 @@ jobs:
           REPO_LNK: ewgen198409/zapret-openwrt
           TAG: ${{ needs.check.outputs.tag }}
           PKGVER: ${{ needs.build.outputs.pkgver }}
+          OPENWRT_BRANCH: ${{ needs.build.outputs.branch }}
         run: |
-          TAG_NAME="v${PKGVER}-openwrt-24.10${{ env.TAG_SUFFIX }}"
+          OPENWRT_RELEASE_NAME="${OPENWRT_BRANCH#openwrt-}"
+          TAG_NAME="v${PKGVER}-${OPENWRT_BRANCH}${{ env.TAG_SUFFIX }}"
           
           # Create release if not exists
           if ! gh release view "$TAG_NAME" --repo ${REPO_LNK} >/dev/null 2>&1; then
             gh release create "$TAG_NAME" --repo ${REPO_LNK} \
-              --title "zapret v${PKGVER}" \
-              --notes "zapret v${PKGVER} for OpenWrt 24.10
+              --title "zapret v${PKGVER} for OpenWrt ${OPENWRT_RELEASE_NAME}" \
+              --notes "zapret v${PKGVER} for OpenWrt ${OPENWRT_RELEASE_NAME}
 
               ### Supported architectures:
               - mipsel_24kc (MIPS)
