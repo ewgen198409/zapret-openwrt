@@ -231,13 +231,14 @@ function pkg_version_cmp
 
 function download_releases_info
 {
-	local fname resp hdr txt txtlen txtlines
+	local resp hdr txt txtlen txtlines page
+	page=${1:-1}
 	REL_JSON=
 	
 	echo "Download releases info from GitHub API..."
 	
 	# Use GitHub API directly
-	local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=3"
+	local api_url="https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/releases?per_page=1&page=${page}"
 	
 	echo "Fetching releases from: $api_url"
 	resp=$( curl -s -D - --max-time $CURL_TIMEOUT -H "$CURL_HEADER1" -H "$CURL_HEADER2" "$api_url" 2>/dev/null )
@@ -253,6 +254,10 @@ function download_releases_info
 	txtlen=${#txt}
 	txtlines=$(printf '%s\n' "$txt" | wc -l)
 	
+	if [ "$txt" = "[]" ] && [ "$page" -gt 1 ]; then
+		REL_JSON='{"releases":[]}'
+		return 0
+	fi
 	if [ $txtlen -lt 64 ]; then
 		echo "ERROR: Cannot download releases info! (size = $txtlen)"
 		return 104
@@ -309,31 +314,36 @@ function release_tag_matches_openwrt_branch
 
 function get_actual_release
 {
-	local tag url pre idx_list
+	local tag url pre idx_list page
+	page=1
 	REL_ACTUAL_TAG=
 	REL_ACTUAL_PRE=
 	REL_ACTUAL_URL=
 	REL_ACTUAL_LUCI_URL=
 	REL_EXTRA_PKG_LIST=
 	REL_EXTRA_PKG_ASSETS=
-	json_load "$(printf '%s' "$REL_JSON")"
-	if [ $? -ne 0 ]; then
-		echo "ERROR: incorrect GitHub API response format"
-		json_cleanup
-		return 151
-	fi
-	
-	json_select releases
-	if [ $? -ne 0 ]; then
-		echo "ERROR: incorrect GitHub API response format: no releases"
-		json_cleanup
-		return 157
-	fi
+	while [ "$page" -le 100 ]; do
+		if [ "$page" -gt 1 ]; then
+			download_releases_info "$page" || return $?
+		fi
+		json_load "$(printf '%s' "$REL_JSON")"
+		if [ $? -ne 0 ]; then
+			echo "ERROR: incorrect GitHub API response format"
+			json_cleanup
+			return 151
+		fi
 
-	# releases is an array of release objects
-	json_get_keys idx_list
-	# API already sorted by created_at desc => take first suitable release
-	for rel_id in $idx_list; do
+		json_select releases
+		if [ $? -ne 0 ]; then
+			echo "ERROR: incorrect GitHub API response format: no releases"
+			json_cleanup
+			return 157
+		fi
+
+		# Read one release per page to keep the JSON small enough for jshn.
+		json_get_keys idx_list
+		[ -n "$idx_list" ] || break
+		for rel_id in $idx_list; do
 		json_select "$rel_id"
 		json_get_var tag tag_name
 		json_get_var pre prerelease
@@ -412,11 +422,16 @@ function get_actual_release
 		json_select ..
 		json_select ..
 		json_cleanup
-		REL_ACTUAL_TAG="$tag"
-		REL_ACTUAL_PRE="$pre"
-		echo "DEBUG: REL_ACTUAL_TAG='$REL_ACTUAL_TAG' REL_ACTUAL_URL='$REL_ACTUAL_URL' REL_ACTUAL_LUCI_URL='$REL_ACTUAL_LUCI_URL'" >&2
-		echo "DEBUG: REL_EXTRA_PKG_LIST='$REL_EXTRA_PKG_LIST'" >&2
-		return 0
+		if [ -n "$REL_ACTUAL_URL" ]; then
+			REL_ACTUAL_TAG="$tag"
+			REL_ACTUAL_PRE="$pre"
+			echo "DEBUG: REL_ACTUAL_TAG='$REL_ACTUAL_TAG' REL_ACTUAL_URL='$REL_ACTUAL_URL' REL_ACTUAL_LUCI_URL='$REL_ACTUAL_LUCI_URL'" >&2
+			echo "DEBUG: REL_EXTRA_PKG_LIST='$REL_EXTRA_PKG_LIST'" >&2
+			return 0
+		fi
+		done
+		json_cleanup
+		page=$((page + 1))
 	done
 	json_cleanup
 	echo "ERROR: latest release for arch \"$ZAP_CPU_ARCH\" not found!"
