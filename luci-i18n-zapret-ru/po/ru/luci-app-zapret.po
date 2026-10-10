@@ -65,8 +65,8 @@ msgstr "Дополнительные пакеты"
 msgid "Reinstall"
 msgstr "Переустановить"
 
-msgid "Latest version already installed. Use \"Forced reinstall\" to reinstall."
-msgstr "Последняя версия уже установлена. Используйте \"Принудительную переустановку\" для переустановки."
+msgid "No package upgrade is needed. Select optional packages or enable forced reinstall."
+msgstr "Обновление пакетов не требуется. Выберите дополнительные пакеты или включите принудительную переустановку."
 
 msgid "Forced reinstall enabled - will reinstall current version."
 msgstr "Принудительная переустановка включена - будет переустановлена текущая версия."
