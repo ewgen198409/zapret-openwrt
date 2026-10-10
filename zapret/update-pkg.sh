@@ -8,15 +8,17 @@ opt_prerelease=
 opt_update=
 opt_forced=
 opt_extra=
+opt_extra_only=
 opt_test=
 
-while getopts "cu:e:pft:" opt; do
+while getopts "cu:e:pft:x" opt; do
 	case $opt in
 		c) opt_check=true;;
 		p) opt_prerelease="true";;
 		u) opt_update="$OPTARG";;
 		e) opt_extra="$OPTARG";;
 		f) opt_forced="true";;
+		x) opt_extra_only="true";;
 		t) opt_test="$OPTARG";;
 	esac
 done
@@ -384,7 +386,7 @@ function get_actual_release
 					;;
 			esac
 			case "$asset_name" in
-				*"_""${ZAP_CPU_ARCH}""."${ZAP_PKG_EXT}"|*"-""${ZAP_CPU_ARCH}""."${ZAP_PKG_EXT}"|*"_all.""${ZAP_PKG_EXT}"|*"-all.""${ZAP_PKG_EXT}") ;;
+				*_"${ZAP_CPU_ARCH}.${ZAP_PKG_EXT}"|*-"${ZAP_CPU_ARCH}.${ZAP_PKG_EXT}"|*_all."${ZAP_PKG_EXT}"|*-all."${ZAP_PKG_EXT}") ;;
 				*)
 					json_select ..
 					continue
@@ -436,6 +438,67 @@ function get_actual_release
 	json_cleanup
 	echo "ERROR: latest release for arch \"$ZAP_CPU_ARCH\" not found!"
 	return 150  # release not found
+}
+
+function install_optional_packages_only
+{
+	local extra_pkg extra_url extra_file phase package_phase
+	if [ -z "$opt_extra" ]; then
+		echo "ERROR: no optional packages selected"
+		return 1
+	fi
+	ZAP_PKG_DIR=/tmp/$ZAPRET_CFG_NAME-pkg
+	rm -rf "$ZAP_PKG_DIR" 2>/dev/null
+	mkdir -p "$ZAP_PKG_DIR" || return 1
+
+	for extra_pkg in $( printf '%s' "$opt_extra" | tr ',' ' ' ); do
+		case "$extra_pkg" in
+			''|*[!a-zA-Z0-9+_.-]*)
+				echo "ERROR: invalid optional package name '$extra_pkg'"
+				rm -rf "$ZAP_PKG_DIR" 2>/dev/null
+				return 1
+				;;
+		esac
+		case ",$REL_EXTRA_PKG_LIST," in
+			*,"$extra_pkg",*) ;;
+			*)
+				echo "ERROR: optional package '$extra_pkg' is not in selected release"
+				rm -rf "$ZAP_PKG_DIR" 2>/dev/null
+				return 1
+				;;
+		esac
+		extra_url=$( printf '%b' "$REL_EXTRA_PKG_ASSETS" | awk -F'|' -v pkg="$extra_pkg" '$1 == pkg { print $2; exit }' )
+		if [ -z "$extra_url" ]; then
+			echo "ERROR: no download URL for optional package '$extra_pkg'"
+			rm -rf "$ZAP_PKG_DIR" 2>/dev/null
+			return 1
+		fi
+		extra_file=${extra_url##*/}
+		echo "Downloading optional package $extra_pkg from $extra_url..."
+		if ! curl -f -s -L --retry 3 --retry-delay 1 --max-time 60 -H "$CURL_HEADER2" "$extra_url" -o "$ZAP_PKG_DIR/$extra_file"; then
+			echo "ERROR: cannot download optional package '$extra_pkg'"
+			rm -rf "$ZAP_PKG_DIR" 2>/dev/null
+			return 1
+		fi
+	done
+
+	echo "Install selected optional packages only: $opt_extra"
+	for phase in non-luci luci; do
+		for extra_pkg in $( printf '%s' "$opt_extra" | tr ',' ' ' ); do
+			case "$extra_pkg" in luci-*) package_phase=luci;; *) package_phase=non-luci;; esac
+			[ "$phase" = "$package_phase" ] || continue
+			extra_file=$( find "$ZAP_PKG_DIR" -maxdepth 1 -type f -name "${extra_pkg}*.${ZAP_PKG_EXT}" | head -n 1 )
+			if [ -z "$extra_file" ]; then
+				echo "ERROR: downloaded file not found for optional package '$extra_pkg'"
+				rm -rf "$ZAP_PKG_DIR" 2>/dev/null
+				return 1
+			fi
+			opkg install "$extra_file" || { rm -rf "$ZAP_PKG_DIR" 2>/dev/null; return 1; }
+		done
+	done
+	rm -rf "$ZAP_PKG_DIR" 2>/dev/null
+	echo "Temporary directory removed: $ZAP_PKG_DIR"
+	echo "RESULT: (+) Optional packages successfully installed!"
 }
 
 # -------------------------------------------------------------------------------------------------------
@@ -589,6 +652,17 @@ fi
 echo "ZAP_PKG_URL = $ZAP_PKG_URL"
 
 ZAP_VER_CMP=$( pkg_version_cmp "$ZAP_CUR_PKG_VER" "$ZAP_PKG_ZIP_VER" )
+if [ "$opt_extra_only" = "true" ]; then
+	case "$ZAP_VER_CMP" in
+		E) ;;
+		*)
+			echo "ERROR: optional packages can only be installed when the installed version exactly matches the release"
+			return 233
+			;;
+	esac
+	install_optional_packages_only || return 234
+	return 0
+fi
 if [ "$opt_update" = "" ]; then
 	if [ "$ZAP_VER_CMP" = "E" ]; then
 		echo "RESULT: (E) No update required for this package!"

@@ -115,6 +115,8 @@ return baseclass.extend({
         this._action = 'checkUpdates';
         this.setStage(1);
         this.pkg_url = null;
+        this.isSameVersion = false;
+        this.canReinstall = false;
         this.renderExtraPackages([]);
         this.appendLog(_('Checking for updates...'));
         let cmd = [ fn_update_pkg_sh, '-c' ];  // check for updates
@@ -153,6 +155,9 @@ return baseclass.extend({
             cmd.push('-e');
             cmd.push(selectedExtras.join(','));
         }
+        if (this.isSameVersion && !document.getElementById('cfg_forced_reinstall').checked && selectedExtras.length > 0) {
+            cmd.push('-x');  // install selected optional packages only
+        }
         if (document.getElementById('cfg_forced_reinstall').checked == true) {
             cmd.push('-f');  // forced reinstall if same version
         }
@@ -174,7 +179,7 @@ return baseclass.extend({
             let code = txt.match(/^RESULT:\s*\(([^)]+)\)\s+.+$/m);
             if (this._action == 'checkUpdates') {
                 this.appendLog('=========================================================');
-                if (code && code[1] == 'E') {
+                if (code && (code[1] == 'E' || code[1] == 'G')) {
                     this.btn_install.textContent = _('Reinstall');
                 } else {
                     this.btn_install.textContent = _('Install');
@@ -193,22 +198,23 @@ return baseclass.extend({
                 }
                 let pkg_url = txt.match(/^ZAP_PKG_URL\s*=\s*(.+)$/m);
                 if (code && pkg_url) {
-                    // Check if versions are same (E or G codes)
-                    let isSameVersion = (code[1] == 'E' || code[1] == 'G');
+                    let isSameOrNewer = (code[1] == 'E' || code[1] == 'G');
+                    this.pkg_url = pkg_url[1];
+                    this.isSameVersion = (code[1] == 'E');
+                    this.canReinstall = isSameOrNewer;
                     
-                    if (isSameVersion && !this.forced_reinstall) {
-                        // Same version and forced reinstall is OFF -> disable install
-                        this.appendLog(_('Latest version already installed. Use "Forced reinstall" to reinstall.'));
-                        this.setStage(0);  // install not needed
+                    if (isSameOrNewer && !this.forced_reinstall) {
+                        this.appendLog(_('No package upgrade is needed. Select optional packages or enable forced reinstall.'));
+                        this.setStage(0);
+                        this.updateInstallAvailability();
                         return;
                     }
                     
                     // If same version but forced reinstall is ON -> allow reinstall
-                    if (isSameVersion && this.forced_reinstall) {
+                    if (isSameOrNewer && this.forced_reinstall) {
                         this.appendLog(_('Forced reinstall enabled - will reinstall current version.'));
                     }
                     
-                    this.pkg_url = pkg_url[1];
                     this.setStage(2);  // enable all buttons
                     return;  // install allowed
                 }
@@ -250,6 +256,17 @@ return baseclass.extend({
         return selected;
     },
 
+    updateInstallAvailability: function()
+    {
+        if (!this.pkg_url || !this.canReinstall || this.stage == 1 || this.stage == 3) {
+            return;
+        }
+        let canInstall = this.forced_reinstall || (this.isSameVersion && this.getSelectedExtraPackages().length > 0);
+        let extrasOnly = this.isSameVersion && !this.forced_reinstall && this.getSelectedExtraPackages().length > 0;
+        this.btn_install.textContent = extrasOnly ? _('Install') : _('Reinstall');
+        this.setStage(canInstall ? 2 : 0);
+    },
+
     renderExtraPackages: function(pkgList)
     {
         if (!this.extraPkgSection || !this.extraPkgListNode) {
@@ -267,6 +284,7 @@ return baseclass.extend({
         pkgList.forEach((pkg, idx) => {
             let id = 'cfg_extra_pkg_' + idx;
             let checkbox = E('input', { type: 'checkbox', id: id, value: pkg });
+            checkbox.addEventListener('change', () => this.updateInstallAvailability());
             this.extraPkgCheckboxes.push(checkbox);
             rows.push(E('label', { 'for': id, 'style': 'display:block; margin:4px 0; line-height:1.35;' }, [
                 checkbox,
@@ -287,6 +305,8 @@ return baseclass.extend({
         this.stage = 0;
         this.pkg_arch = pkg_arch;
         this.pkg_url = null;
+        this.isSameVersion = false;
+        this.canReinstall = false;
 
         let exclude_prereleases = E('label', [
             E('input', { type: 'checkbox', id: 'cfg_exclude_prereleases', checked: true }),
@@ -390,19 +410,7 @@ return baseclass.extend({
             if (checkboxForcedReinstall) {
                 checkboxForcedReinstall.addEventListener('change', (ev) => {
                     this.forced_reinstall = checkboxForcedReinstall.checked;
-                    
-                    // If we have a package URL and forced reinstall is now enabled,
-                    // activate the install button even if versions are the same
-                    if (this.pkg_url && this.stage == 0 && this.forced_reinstall) {
-                        this.appendLog(_('Forced reinstall enabled - install button is now active.'));
-                        this.setStage(2);
-                    }
-                    // If forced reinstall is disabled and versions are the same,
-                    // disable the install button
-                    else if (this.pkg_url && this.forced_reinstall == false && this.stage == 0) {
-                        this.appendLog(_('Forced reinstall disabled - install button deactivated.'));
-                        this.setStage(0);
-                    }
+                    this.updateInstallAvailability();
                 });
             }
         }, 100);
